@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import numpy as np
+import multiprocessing
 from MyTT import *
 from longport_utils import get_atr_longport
 
@@ -41,16 +42,13 @@ def huice_1d(data, first_cash, zhiying_diff):
             sell_no_mod_2 = 0
         else:
             act_init_1line(data, i)
-        if data.loc[i, "buy_signal"] == 1:
+        if data.loc[i, "buy_signal"] == 1 and i<389 - 3:
             act_buy(data, i, first_cash)
-            print(1)
         if data.loc[i, "sell_signal"] == 1:
             if sell_no_mod_2 == 0:
                 act_sell_1half(data, i)
-                print(1)
             else:
                 act_sell_2half(data, i)
-                print(1)
             sell_no_mod_2 = 1 - sell_no_mod_2
         max_zhiying_prices = [
             float(j) for j in data.loc[i, "max_zhiying_prices"].split(";")[0:-1]
@@ -59,9 +57,10 @@ def huice_1d(data, first_cash, zhiying_diff):
             np.array(max_zhiying_prices) - float(data.loc[i, "open"]) >= zhiying_diff
         ).any():
             act_sell_zhiying(data, i, zhiying_diff)
-            print(1)
         if i == 389 - 3:
             act_sell_2half(data, i)
+
+    return data, float(data.cash.iloc[-1])
 
 
 def act_sell_zhiying(data, i, zhiying_diff):
@@ -93,9 +92,7 @@ def act_sell_zhiying(data, i, zhiying_diff):
             data.loc[i, "chicang"] += (
                 str(chicang_prices[j]) + ":" + str(chicang_nums[j]) + ";"
             )
-            data.loc[i,'max_zhiying_prices']+= (
-                str(max_zhiying_prices[j]) + ";"
-            )
+            data.loc[i, "max_zhiying_prices"] += str(max_zhiying_prices[j]) + ";"
 
 
 def act_sell_1half(data, i):
@@ -180,49 +177,48 @@ def act_init_1line(data, i):
             data.loc[i, "max_zhiying_prices"] += str(max_zhiying_prices[k]) + ";"
 
 
-if __name__ == "__main__":
+def huice_nd(code):
     f_path = "./data_ready/"
-    code = "NVDA"
-    date = '20240417'
-    csv_path = os.path.join(f_path,code,date+'.csv')
+    # code = "NVDA"
+    # date = '20240417'
+    # csv_path = os.path.join(f_path,code,date+'.csv')
+    # atr = get_atr_longport("NVDA", "20231106")
     csvs = sorted(os.listdir(f_path + code))
     csvs = [f_path + code + "/" + p for p in csvs]
-    data = pd.read_csv(csv_path, index_col=0)
-    atr = get_atr_longport(code,date)
-    huice_1d(data, 100000,round(atr/8,2))
-    print(1)
-    # debug
-    # for csv in csvs:
-    #     data = pd.read_csv(csv, index_col=0)
-    #     icon_buy = (
-    #         (
-    #             data["icon_1"].fillna(0)
-    #             + data["icon_38"].fillna(0)
-    #             + data["icon_34"].fillna(0)
-    #             + data["icon_13"].fillna(0)
-    #             + data["icon_11"].fillna(0)
-    #         )
-    #         >= 1
-    #     ).astype(int)
-    #     icon_jw5_30_bottom = (
-    #         ((data["jw5"] < 20).astype(int) + (data["jw30"] < 20).astype(int)) >= 2
-    #     ).astype(int)
-    #     icon_sell = (
-    #         (
-    #             data["icon_2"].fillna(0)
-    #             + data["icon_39"].fillna(0)
-    #             + data["icon_35"].fillna(0)
-    #             + data["icon_12"].fillna(0)
-    #             + data["icon_41"].fillna(0)
-    #         )
-    #         >= 1
-    #     ).astype(int)
-    #     icon_jw5_30_top = (
-    #         ((data["jw5"] > 80).astype(int) + (data["jw30"] > 80).astype(int)) >= 2
-    #     ).astype(int)
-    #
-    #     data["buy_signal"] = icon_jw5_30_bottom * icon_buy
-    #     data["sell_signal"] = icon_sell
-    #     if data["buy_signal"].sum() >= 1: #and data["sell_signal"].sum() >= 1:
-    #         print(csv)
-    #         print(icon_sell.sum())
+    for i in range(len(csvs)):
+        date = csvs[i].split("/")[-1].split(".")[0]
+        data = pd.read_csv(csvs[i], index_col=0)
+        atr = get_atr_longport(code, date)
+        if i == 0:
+            _, cash = huice_1d(data, 100000, round(atr / 8, 2))
+            data_ops = ""
+        else:
+            data_done, cash = huice_1d(data, cash, round(atr / 8, 2))
+            if (data_done.buy_signal.sum() > 0).any():
+                if data_ops is "":
+                    data_ops = data[
+                        (data.sell_detail != "")
+                        | (data.buy_detail != "")
+                        | (data.buy_signal > 0)
+                    ]
+                else:
+                    data_op = data[
+                        (data.sell_detail != "")
+                        | (data.buy_detail != "")
+                        | (data.buy_signal > 0)
+                    ]
+                    data_ops = pd.concat([data_ops, data_op])
+
+        print(csvs[i])
+        print(cash)
+    data_ops.to_csv("./data_huice/" + code + ".csv")
+
+def huice_nd_threads(codes):
+    with multiprocessing.Pool(processes=8) as pool:
+        results=pool.map(huice_nd,codes)
+
+
+if __name__ == "__main__":
+    # huice_1d()
+    # huice_nd("AAPL")
+    huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])

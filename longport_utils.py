@@ -12,7 +12,7 @@ def get_atr_longport(code,date):
         m = int(date[4:6])
         d = int(date[6:8])
         for i in range(len(resp)):
-            if resp[i].timestamp==datetime.datetime(y, m, d, 12, 0):
+            if resp[i].timestamp.replace(hour=12)==datetime.datetime(y, m, d, 12, 0):
                 return i
 
     def get_atr(C, L, H):
@@ -30,7 +30,7 @@ def get_atr_longport(code,date):
     ctx = QuoteContext(config)
     code = code+'.US'
     resp = ctx.candlesticks(
-        code, Period.Day, 1000, AdjustType.NoAdjust)
+        code, Period.Day, 400, AdjustType.NoAdjust)
     C=[]
     L=[]
     H=[]
