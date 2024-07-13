@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import numpy as np
 from MyTT import *
+from longport_utils import get_atr_longport
 
 def huice_1d(data, first_cash, zhiying_diff):
     icon_buy = (
@@ -62,17 +63,6 @@ def huice_1d(data, first_cash, zhiying_diff):
         if i == 389 - 3:
             act_sell_2half(data, i)
 
-def get_atr(C, L, H):
-    try:
-        C = np.array(C)
-        L = np.array(L)
-        H = np.array(H)
-        MTR = MAX(MAX((H - L), ABS(REF(C, 1) - H)), ABS(REF(C, 1) - L));
-        ATR = MA(MTR, 14);
-        dict = {"atr": ATR.tolist()}
-        return dict
-    except:
-        print("atr 计算失败")
 
 def act_sell_zhiying(data, i, zhiying_diff):
     max_zhiying_prices = [
@@ -193,11 +183,13 @@ def act_init_1line(data, i):
 if __name__ == "__main__":
     f_path = "./data_ready/"
     code = "NVDA"
+    date = '20240417'
+    csv_path = os.path.join(f_path,code,date+'.csv')
     csvs = sorted(os.listdir(f_path + code))
     csvs = [f_path + code + "/" + p for p in csvs]
-    data = pd.read_csv("./data_ready/NVDA/20240417.csv", index_col=0)
-    atr = get_atr(data.close,data.low,data.high)
-    huice_1d(data, 100000,5)
+    data = pd.read_csv(csv_path, index_col=0)
+    atr = get_atr_longport(code,date)
+    huice_1d(data, 100000,round(atr/8,2))
     print(1)
     # debug
     # for csv in csvs:
