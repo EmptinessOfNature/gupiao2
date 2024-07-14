@@ -177,7 +177,7 @@ def act_init_1line(data, i):
             data.loc[i, "max_zhiying_prices"] += str(max_zhiying_prices[k]) + ";"
 
 
-def huice_nd(code):
+def huice_nd(code,atr_div_rate):
     f_path = "./data_ready/"
     # code = "NVDA"
     # date = '20240417'
@@ -190,10 +190,10 @@ def huice_nd(code):
         data = pd.read_csv(csvs[i], index_col=0)
         atr = get_atr_longport(code, date)
         if i == 0:
-            _, cash = huice_1d(data, 100000, round(atr / 8, 2))
+            _, cash = huice_1d(data, 100000, round(atr / atr_div_rate, 2))
             data_ops = ""
         else:
-            data_done, cash = huice_1d(data, cash, round(atr / 8, 2))
+            data_done, cash = huice_1d(data, cash, round(atr / atr_div_rate, 2))
             if (data_done.buy_signal.sum() > 0).any():
                 if data_ops is "":
                     data_ops = data[
@@ -211,14 +211,15 @@ def huice_nd(code):
 
         print(csvs[i])
         print(cash)
-    data_ops.to_csv("./data_huice/" + code + ".csv")
+    data_ops.to_csv("./data_huice/" + code +str(atr_div_rate)+ ".csv")
 
-def huice_nd_threads(codes):
+def huice_nd_threads(args):
     with multiprocessing.Pool(processes=8) as pool:
-        results=pool.map(huice_nd,codes)
+        results=pool.map(huice_nd,args)
 
 
 if __name__ == "__main__":
     # huice_1d()
-    # huice_nd("AAPL")
-    huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])
+    huice_nd("TQQQ",3)
+    # huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])
+    # huice_nd_threads(args=[['TQQQ']+[i] for i in range(1,8)])
