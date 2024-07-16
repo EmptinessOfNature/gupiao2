@@ -43,7 +43,8 @@ def huice_1d(data, first_cash, zhiying_diff):
         else:
             act_init_1line(data, i)
         if data.loc[i, "buy_signal"] == 1 and i<389 - 3:
-            act_buy(data, i, first_cash)
+            now_cash=data.loc[i,'cash']
+            act_buy(data, i, first_cash,now_cash)
         if data.loc[i, "sell_signal"] == 1:
             if sell_no_mod_2 == 0:
                 act_sell_1half(data, i)
@@ -140,9 +141,11 @@ def act_sell_2half(data, i):
     data.loc[i, "profit"] = profit
 
 
-def act_buy(data, i, first_cash):
+def act_buy(data, i, first_cash,now_cash):
     buy_amt = first_cash // 2 // data.loc[i, "open"]
-    if buy_amt >= 1:
+    if buy_amt*data.loc[i,"open"]>now_cash:
+        buy_amt=now_cash//data.loc[i,"open"]
+    if buy_amt >= 3:
         data.loc[i, "cash"] = data.loc[i, "cash"] - buy_amt * data.loc[i, "open"]
         data.loc[i, "chicang"] += str(data.loc[i, "open"]) + ":" + str(buy_amt) + ";"
         data.loc[i, "buy_detail"] += str(data.loc[i, "open"]) + ":" + str(buy_amt) + ";"
@@ -189,6 +192,8 @@ def huice_nd(code,atr_div_rate):
         date = csvs[i].split("/")[-1].split(".")[0]
         data = pd.read_csv(csvs[i], index_col=0)
         atr = get_atr_longport(code, date)
+        if date=='20230720':
+            print(1)
         if i == 0:
             _, cash = huice_1d(data, 100000, round(atr / atr_div_rate, 2))
             data_ops = ""
@@ -220,6 +225,6 @@ def huice_nd_threads(args):
 
 if __name__ == "__main__":
     # huice_1d()
-    huice_nd("TQQQ",3)
+    huice_nd("TQQQ",4)
     # huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])
     # huice_nd_threads(args=[['TQQQ']+[i] for i in range(1,8)])
