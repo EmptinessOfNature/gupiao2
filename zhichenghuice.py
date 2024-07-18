@@ -189,12 +189,12 @@ def huice_nd(code,atr_div_rate):
     csvs = sorted(os.listdir(f_path + code))
     csvs_new=[]
     for i in range(len(csvs)):
-        if csvs[i].split(".")[0][0:6]=='202401':
+        if csvs[i].split(".")[0][0:4]=='2024':
             csvs_new.append(csvs[i])
     csvs=csvs_new
     csvs = [f_path + code + "/" + p for p in csvs]
     # 统计数据
-    stat_track = {'trade_days':0,'win_days':0,'win_sells':0,'lose_sells':0,'max_1d_profit':0,'max_1d_lost':0}
+    stat_track = {'code':code,'trade_days':0,'win_days':0,'win_sells':0,'lose_sells':0,'max_1d_profit':0,'max_1d_lost':0}
     for i in range(len(csvs)):
         date = csvs[i].split("/")[-1].split(".")[0]
         data = pd.read_csv(csvs[i], index_col=0)
@@ -244,17 +244,18 @@ def huice_nd(code,atr_div_rate):
     stat_track['avg_lose_sell_profit'] = data_ops[data_ops.profit < 0].profit.sum() / data_ops[data_ops.profit < 0].profit.count()
 
     data_ops.to_csv("./data_huice/" + code +str(atr_div_rate)+ ".csv")
-    pd.DataFrame(stat_track,index=[0]).to_csv("./data_huice/" + code +str(atr_div_rate)+ "统计数据.csv")
+    pd.DataFrame(stat_track,index=[0]).T.to_csv("./data_huice/" + code +str(atr_div_rate)+ "统计数据.csv")
     return stat_track
 
 def huice_nd_threads(args):
     with multiprocessing.Pool(processes=8) as pool:
-        results=pool.map(huice_nd,args)
+        # results=pool.map(huice_nd,args)
+        results=pool.starmap(huice_nd,args)
 
 
 if __name__ == "__main__":
     # huice_1d()
-    stat_track = huice_nd("TQQQ",9)
+    # stat_track = huice_nd("TQQQ",9)
     # huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])
-    # huice_nd_threads(args=[['TQQQ']+[i] for i in range(1,8)])
+    huice_nd_threads(args=[['TQQQ']+[i] for i in range(1,8)])
     print('done!')
