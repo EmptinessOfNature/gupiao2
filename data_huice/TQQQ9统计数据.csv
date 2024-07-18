@@ -1,0 +1,2 @@
+,trade_days,win_days,win_sells,lose_sells,max_1d_profit,max_1d_lost,code,start_day,end_day,start_cash,end_cash,total_profit_rate,buy_nums,sell_nums,avg_win_sell_profit,avg_lose_sell_profit
+0,3,2,2,3,257.7900000000021,-54.4999999999969,TQQQ,20240102,20240131,100000,100209.905,0.002099049999999991,5,5,148.0650000000018,-28.741666666666035

@@ -189,12 +189,12 @@ def huice_nd(code,atr_div_rate):
     csvs = sorted(os.listdir(f_path + code))
     csvs_new=[]
     for i in range(len(csvs)):
-        if csvs[i].split(".")[0][0:4]=='2024':
+        if csvs[i].split(".")[0][0:6]=='202401':
             csvs_new.append(csvs[i])
     csvs=csvs_new
     csvs = [f_path + code + "/" + p for p in csvs]
     # 统计数据
-    stat_track = {'trade_days':0,'win_days':0,'win_sells':0,'lose_sells':0,'max_1d_profit':0,'max_1d_lost':0,'avg_sell_profit':0,'avg_sell_lost':0}
+    stat_track = {'trade_days':0,'win_days':0,'win_sells':0,'lose_sells':0,'max_1d_profit':0,'max_1d_lost':0}
     for i in range(len(csvs)):
         date = csvs[i].split("/")[-1].split(".")[0]
         data = pd.read_csv(csvs[i], index_col=0)
@@ -207,37 +207,44 @@ def huice_nd(code,atr_div_rate):
         # else:
         data_done, cash = huice_1d(data, cash, round(atr / atr_div_rate, 2))
         if (data_done.buy_signal.sum() > 0).any():
+            data_op = data[
+                (data.sell_detail != "")
+                | (data.buy_detail != "")
+                | (data.buy_signal > 0)
+            ]
             if data_ops is "":
-                data_ops = data[
-                    (data.sell_detail != "")
-                    | (data.buy_detail != "")
-                    | (data.buy_signal > 0)
-                ]
+                data_ops = data_op.copy(deep=True)
             else:
-                data_op = data[
-                    (data.sell_detail != "")
-                    | (data.buy_detail != "")
-                    | (data.buy_signal > 0)
-                ]
                 data_ops = pd.concat([data_ops, data_op])
-            # 统计指标
-                print(1)
-                buy_num = (data_op['buy_detail']!='').sum()
-                sell_num = (data_op['sell_detail']!='').sum()
-                stat_track['trade_days'] += 1
-                if data_op.profit.sum()>0:
-                    stat_track['win_days'] += 1
-                    stat_track['win_sells'] += (data_op.profit>0).sum()
-                stat_track['lose_sells'] += (data_op.profit < 0).sum()
-                if stat_track['max_1d_profit']< data_op.profit.sum():
-                    stat_track['max_1d_profit']=data_op.profit.sum()
-                if stat_track['max_1d_lost'] > data_op.profit.sum():
-                    stat_track['max_1d_lost']=data_op.profit.sum()
-
+        # 统计指标
+            # buy_num = (data_op['buy_detail']!='').sum()
+            # sell_num = (data_op['sell_detail']!='').sum()
+            stat_track['trade_days'] += 1
+            if data_op.profit.sum()>0:
+                stat_track['win_days'] += 1
+                # stat_track['win_sells'] += (data_op.profit>0).sum()
+            # stat_track['lose_sells'] += (data_op.profit < 0).sum()
+            if stat_track['max_1d_profit']< data_op.profit.sum():
+                stat_track['max_1d_profit']=data_op.profit.sum()
+            if stat_track['max_1d_lost'] > data_op.profit.sum():
+                stat_track['max_1d_lost']=data_op.profit.sum()
         print(csvs[i])
         print(cash)
+    stat_track['code'] = code
+    stat_track['start_day']=csvs[0].split('/')[-1].split('.')[0]
+    stat_track['end_day'] = csvs[-1].split('/')[-1].split('.')[0]
+    stat_track['start_cash'] = 100000
+    stat_track['end_cash'] = data_ops.cash.iloc[-1]
+    stat_track['total_profit_rate'] = stat_track['end_cash'] / stat_track['start_cash'] - 1
+    stat_track['buy_nums'] = (data_ops.buy_detail != '').sum()
+    stat_track['sell_nums'] = (data_ops.sell_detail != '').sum()
+    stat_track['win_sells'] = (data_ops.profit > 0).sum()
+    stat_track['lose_sells'] = (data_ops.profit < 0).sum()
+    stat_track['avg_win_sell_profit'] = data_ops[data_ops.profit > 0].profit.sum() / data_ops[data_ops.profit > 0].profit.count()
+    stat_track['avg_lose_sell_profit'] = data_ops[data_ops.profit < 0].profit.sum() / data_ops[data_ops.profit < 0].profit.count()
 
     data_ops.to_csv("./data_huice/" + code +str(atr_div_rate)+ ".csv")
+    pd.DataFrame(stat_track,index=[0]).to_csv("./data_huice/" + code +str(atr_div_rate)+ "统计数据.csv")
     return stat_track
 
 def huice_nd_threads(args):
