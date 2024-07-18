@@ -187,36 +187,58 @@ def huice_nd(code,atr_div_rate):
     # csv_path = os.path.join(f_path,code,date+'.csv')
     # atr = get_atr_longport("NVDA", "20231106")
     csvs = sorted(os.listdir(f_path + code))
+    csvs_new=[]
+    for i in range(len(csvs)):
+        if csvs[i].split(".")[0][0:4]=='2024':
+            csvs_new.append(csvs[i])
+    csvs=csvs_new
     csvs = [f_path + code + "/" + p for p in csvs]
+    # 统计数据
+    stat_track = {'trade_days':0,'win_days':0,'win_sells':0,'lose_sells':0,'max_1d_profit':0,'max_1d_lost':0,'avg_sell_profit':0,'avg_sell_lost':0}
     for i in range(len(csvs)):
         date = csvs[i].split("/")[-1].split(".")[0]
         data = pd.read_csv(csvs[i], index_col=0)
         atr = get_atr_longport(code, date)
-        if date=='20230720':
-            print(1)
         if i == 0:
-            _, cash = huice_1d(data, 100000, round(atr / atr_div_rate, 2))
+            # data_done, cash = huice_1d(data, 100000, round(atr / atr_div_rate, 2))
+            cash=100000
             data_ops = ""
-        else:
-            data_done, cash = huice_1d(data, cash, round(atr / atr_div_rate, 2))
-            if (data_done.buy_signal.sum() > 0).any():
-                if data_ops is "":
-                    data_ops = data[
-                        (data.sell_detail != "")
-                        | (data.buy_detail != "")
-                        | (data.buy_signal > 0)
-                    ]
-                else:
-                    data_op = data[
-                        (data.sell_detail != "")
-                        | (data.buy_detail != "")
-                        | (data.buy_signal > 0)
-                    ]
-                    data_ops = pd.concat([data_ops, data_op])
+
+        # else:
+        data_done, cash = huice_1d(data, cash, round(atr / atr_div_rate, 2))
+        if (data_done.buy_signal.sum() > 0).any():
+            if data_ops is "":
+                data_ops = data[
+                    (data.sell_detail != "")
+                    | (data.buy_detail != "")
+                    | (data.buy_signal > 0)
+                ]
+            else:
+                data_op = data[
+                    (data.sell_detail != "")
+                    | (data.buy_detail != "")
+                    | (data.buy_signal > 0)
+                ]
+                data_ops = pd.concat([data_ops, data_op])
+            # 统计指标
+                print(1)
+                buy_num = (data_op['buy_detail']!='').sum()
+                sell_num = (data_op['sell_detail']!='').sum()
+                stat_track['trade_days'] += 1
+                if data_op.profit.sum()>0:
+                    stat_track['win_days'] += 1
+                    stat_track['win_sells'] += (data_op.profit>0).sum()
+                stat_track['lose_sells'] += (data_op.profit < 0).sum()
+                if stat_track['max_1d_profit']< data_op.profit.sum():
+                    stat_track['max_1d_profit']=data_op.profit.sum()
+                if stat_track['max_1d_lost'] > data_op.profit.sum():
+                    stat_track['max_1d_lost']=data_op.profit.sum()
 
         print(csvs[i])
         print(cash)
+
     data_ops.to_csv("./data_huice/" + code +str(atr_div_rate)+ ".csv")
+    return stat_track
 
 def huice_nd_threads(args):
     with multiprocessing.Pool(processes=8) as pool:
@@ -225,6 +247,7 @@ def huice_nd_threads(args):
 
 if __name__ == "__main__":
     # huice_1d()
-    huice_nd("TQQQ",4)
+    stat_track = huice_nd("TQQQ",9)
     # huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])
     # huice_nd_threads(args=[['TQQQ']+[i] for i in range(1,8)])
+    print('done!')
