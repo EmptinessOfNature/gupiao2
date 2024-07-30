@@ -4,6 +4,8 @@ import numpy as np
 import multiprocessing
 from MyTT import *
 from longport_utils import get_atr_longport
+from datetime import datetime
+
 
 def huice_1d(data, first_cash, zhiying_diff):
     icon_buy = (
@@ -42,9 +44,9 @@ def huice_1d(data, first_cash, zhiying_diff):
             sell_no_mod_2 = 0
         else:
             act_init_1line(data, i)
-        if data.loc[i, "buy_signal"] == 1 and i<389 - 3:
-            now_cash=data.loc[i,'cash']
-            act_buy(data, i, first_cash,now_cash)
+        if data.loc[i, "buy_signal"] == 1 and i < 389 - 3:
+            now_cash = data.loc[i, "cash"]
+            act_buy(data, i, first_cash, now_cash)
         if data.loc[i, "sell_signal"] == 1:
             if sell_no_mod_2 == 0:
                 act_sell_1half(data, i)
@@ -141,10 +143,10 @@ def act_sell_2half(data, i):
     data.loc[i, "profit"] = profit
 
 
-def act_buy(data, i, first_cash,now_cash):
+def act_buy(data, i, first_cash, now_cash):
     buy_amt = first_cash // 2 // data.loc[i, "open"]
-    if buy_amt*data.loc[i,"open"]>now_cash:
-        buy_amt=now_cash//data.loc[i,"open"]
+    if buy_amt * data.loc[i, "open"] > now_cash:
+        buy_amt = now_cash // data.loc[i, "open"]
     if buy_amt >= 3:
         data.loc[i, "cash"] = data.loc[i, "cash"] - buy_amt * data.loc[i, "open"]
         data.loc[i, "chicang"] += str(data.loc[i, "open"]) + ":" + str(buy_amt) + ";"
@@ -180,28 +182,36 @@ def act_init_1line(data, i):
             data.loc[i, "max_zhiying_prices"] += str(max_zhiying_prices[k]) + ";"
 
 
-def huice_nd(code,atr_div_rate):
+def huice_nd(code, atr_div_rate):
     f_path = "./data_ready/"
     # code = "NVDA"
     # date = '20240417'
     # csv_path = os.path.join(f_path,code,date+'.csv')
     # atr = get_atr_longport("NVDA", "20231106")
     csvs = sorted(os.listdir(f_path + code))
-    csvs_new=[]
+    csvs_new = []
     for i in range(len(csvs)):
-        if csvs[i].split(".")[0][0:4]=='2024':
+        if csvs[i].split(".")[0][0:4] == "2024":
             csvs_new.append(csvs[i])
-    csvs=csvs_new
+    csvs = csvs_new
     csvs = [f_path + code + "/" + p for p in csvs]
     # 统计数据
-    stat_track = {'code':code,'trade_days':0,'win_days':0,'win_sells':0,'lose_sells':0,'max_1d_profit':0,'max_1d_lost':0}
+    stat_track = {
+        "code": code,
+        "trade_days": 0,
+        "win_days": 0,
+        "win_sells": 0,
+        "lose_sells": 0,
+        "max_1d_profit": 0,
+        "max_1d_lost": 0,
+    }
     for i in range(len(csvs)):
         date = csvs[i].split("/")[-1].split(".")[0]
         data = pd.read_csv(csvs[i], index_col=0)
         atr = get_atr_longport(code, date)
         if i == 0:
             # data_done, cash = huice_1d(data, 100000, round(atr / atr_div_rate, 2))
-            cash=100000
+            cash = 100000
             data_ops = ""
 
         # else:
@@ -216,46 +226,66 @@ def huice_nd(code,atr_div_rate):
                 data_ops = data_op.copy(deep=True)
             else:
                 data_ops = pd.concat([data_ops, data_op])
-        # 统计指标
+            # 统计指标
             # buy_num = (data_op['buy_detail']!='').sum()
             # sell_num = (data_op['sell_detail']!='').sum()
-            stat_track['trade_days'] += 1
-            if data_op.profit.sum()>0:
-                stat_track['win_days'] += 1
+            stat_track["trade_days"] += 1
+            if data_op.profit.sum() > 0:
+                stat_track["win_days"] += 1
                 # stat_track['win_sells'] += (data_op.profit>0).sum()
             # stat_track['lose_sells'] += (data_op.profit < 0).sum()
-            if stat_track['max_1d_profit']< data_op.profit.sum():
-                stat_track['max_1d_profit']=data_op.profit.sum()
-            if stat_track['max_1d_lost'] > data_op.profit.sum():
-                stat_track['max_1d_lost']=data_op.profit.sum()
+            if stat_track["max_1d_profit"] < data_op.profit.sum():
+                stat_track["max_1d_profit"] = data_op.profit.sum()
+            if stat_track["max_1d_lost"] > data_op.profit.sum():
+                stat_track["max_1d_lost"] = data_op.profit.sum()
         print(csvs[i])
         print(cash)
-    stat_track['code'] = code
-    stat_track['start_day']=csvs[0].split('/')[-1].split('.')[0]
-    stat_track['end_day'] = csvs[-1].split('/')[-1].split('.')[0]
-    stat_track['start_cash'] = 100000
-    stat_track['end_cash'] = data_ops.cash.iloc[-1]
-    stat_track['total_profit_rate'] = stat_track['end_cash'] / stat_track['start_cash'] - 1
-    stat_track['buy_nums'] = (data_ops.buy_detail != '').sum()
-    stat_track['sell_nums'] = (data_ops.sell_detail != '').sum()
-    stat_track['win_sells'] = (data_ops.profit > 0).sum()
-    stat_track['lose_sells'] = (data_ops.profit < 0).sum()
-    stat_track['avg_win_sell_profit'] = data_ops[data_ops.profit > 0].profit.sum() / data_ops[data_ops.profit > 0].profit.count()
-    stat_track['avg_lose_sell_profit'] = data_ops[data_ops.profit < 0].profit.sum() / data_ops[data_ops.profit < 0].profit.count()
+    stat_track["code"] = code
+    stat_track["start_day"] = csvs[0].split("/")[-1].split(".")[0]
+    stat_track["end_day"] = csvs[-1].split("/")[-1].split(".")[0]
+    stat_track["start_cash"] = 100000
+    stat_track["end_cash"] = data_ops.cash.iloc[-1]
+    stat_track["total_profit_rate"] = (
+        stat_track["end_cash"] / stat_track["start_cash"] - 1
+    )
+    stat_track["buy_nums"] = (data_ops.buy_detail != "").sum()
+    stat_track["sell_nums"] = (data_ops.sell_detail != "").sum()
+    stat_track["win_sells"] = (data_ops.profit > 0).sum()
+    stat_track["lose_sells"] = (data_ops.profit < 0).sum()
+    stat_track["avg_win_sell_profit"] = (
+        data_ops[data_ops.profit > 0].profit.sum()
+        / data_ops[data_ops.profit > 0].profit.count()
+    )
+    stat_track["avg_lose_sell_profit"] = (
+        data_ops[data_ops.profit < 0].profit.sum()
+        / data_ops[data_ops.profit < 0].profit.count()
+    )
 
-    data_ops.to_csv("./data_huice/" + code +str(atr_div_rate)+ ".csv")
-    pd.DataFrame(stat_track,index=[0]).T.to_csv("./data_huice/" + code +str(atr_div_rate)+ "统计数据.csv")
+    stg_ver = "01"
+    save_folder = os.path.join(
+        "./data_huice/", stg_ver , datetime.now().strftime("%Y%m%d%H%M")
+    )
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+    # else:
+    #     user_input = input(
+    #         f"策略版本 '{stg_ver}' 已经存在. 是否替换? (yes/no): ").strip().lower()
+    data_ops.to_csv(os.path.join(save_folder, code + str(atr_div_rate) + ".csv"))
+    pd.DataFrame(stat_track, index=[0]).T.to_csv(
+        os.path.join(save_folder, code + str(atr_div_rate) + "_统计数据.csv")
+    )
     return stat_track
+
 
 def huice_nd_threads(args):
     with multiprocessing.Pool(processes=8) as pool:
         # results=pool.map(huice_nd,args)
-        results=pool.starmap(huice_nd,args)
+        results = pool.starmap(huice_nd, args)
 
 
 if __name__ == "__main__":
     # huice_1d()
     # stat_track = huice_nd("TQQQ",9)
     # huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])
-    huice_nd_threads(args=[['TQQQ']+[i] for i in range(1,8)])
-    print('done!')
+    huice_nd_threads(args=[["TQQQ"] + [i] for i in range(1, 8)])
+    print("done!")
