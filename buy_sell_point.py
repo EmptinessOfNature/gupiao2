@@ -166,6 +166,16 @@ class ZhiCheng:
             data_long[k] = res[k]
         return data_long
 
+    def calc_atr(self,data):
+        ret = data.copy(deep=True)
+        C = np.array(ret['close'])
+        L = np.array(ret['low'])
+        H = np.array(ret['high'])
+        MTR = MAX(MAX((H - L), ABS(REF(C, 1) - H)), ABS(REF(C, 1) - L))
+        ATR = MA(MTR, 14)
+        ret['atr']=ATR
+        return ret
+
 
     def calc_point(self, data, date_mode="ib"):
         assert date_mode in ("ib", "tdx")
@@ -239,13 +249,17 @@ class ZhiCheng:
         data_jw30 = data_jw30.groupby('group').agg({'dt':'last','vol': 'sum', 'open': 'first', 'close': 'last','high':'max','low':'min'})
         ret1 = self.calc_jw(ret)
         ret5 = self.calc_jw(data_jw5)
+        ret5_atr = self.calc_atr(data_jw5)
         ret30 = self.calc_jw(data_jw30)
         jw1  =ret1[['dt', 'jw']].rename(columns={'jw': 'jw1'})
         jw5 = ret5[['dt', 'jw']].rename(columns={'jw': 'jw5'})
         jw30 = ret30[['dt', 'jw']].rename(columns={'jw': 'jw30'})
+        atr5 = ret5_atr[['dt','atr']].rename(columns={'atr': 'atr5'})
         merged = pd.merge(jw1, jw5[['dt', 'jw5']], on='dt', how='left')
+        merged = pd.merge(merged, atr5[['dt', 'atr5']], on='dt', how='left')
         merged = pd.merge(merged, jw30[['dt', 'jw30']], on='dt', how='left')
         merged['jw5'].ffill(inplace=True)
+        merged['atr5'].ffill(inplace=True)
         merged['jw30'].ffill(inplace=True)
         return merged
 
@@ -277,5 +291,5 @@ if __name__ == "__main__":
     zhicheng = ZhiCheng()
     ret = zhicheng.calc_point(hist, date_mode="ib")
     print(ret)
-    # ret2 = zhicheng.calc_point_2_jw_1(ret)
-    # print(ret2)
+    ret2 = zhicheng.calc_point_2_jw_1(ret)
+    print(ret2)

@@ -39,6 +39,7 @@ def huice_1d(data, first_cash, zhiying_diff):
     data["sell_signal"] = icon_sell
 
     for i in range(len(data)):
+        zhiying_diff = data.loc[i,'atr5'] * 1
         if i == 0:
             act_init_1d(data, i, first_cash)
             sell_no_mod_2 = 0
@@ -191,6 +192,7 @@ def huice_nd(code, atr_div_rate):
     csvs = sorted(os.listdir(f_path + code))
     csvs_new = []
     for i in range(len(csvs)):
+        # 只看2024年的
         if csvs[i].split(".")[0][0:4] == "2024":
             csvs_new.append(csvs[i])
     csvs = csvs_new
@@ -208,7 +210,8 @@ def huice_nd(code, atr_div_rate):
     for i in range(len(csvs)):
         date = csvs[i].split("/")[-1].split(".")[0]
         data = pd.read_csv(csvs[i], index_col=0)
-        atr = get_atr_longport(code, date)
+        # atr = get_atr_longport(code, date)
+        atr=1
         if i == 0:
             # data_done, cash = huice_1d(data, 100000, round(atr / atr_div_rate, 2))
             cash = 100000
@@ -278,7 +281,7 @@ def huice_nd(code, atr_div_rate):
 
 
 def huice_nd_threads(args):
-    with multiprocessing.Pool(processes=8) as pool:
+    with multiprocessing.Pool(processes=1) as pool:
         # results=pool.map(huice_nd,args)
         results = pool.starmap(huice_nd, args)
 
@@ -287,5 +290,6 @@ if __name__ == "__main__":
     # huice_1d()
     # stat_track = huice_nd("TQQQ",9)
     # huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])
-    huice_nd_threads(args=[["TQQQ"] + [i] for i in range(1, 8)])
+    # huice_nd_threads(args=[["TQQQ"] + [i] for i in range(1, 8)])
+    huice_nd("TQQQ",1)
     print("done!")
