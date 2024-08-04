@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from buy_sell_point import ZhiCheng
+import multiprocessing
 
 warnings.filterwarnings("ignore")
 
@@ -100,18 +101,38 @@ def point_calc_hist_1d(code,f_path="./data_server/",w_path="./data_ready/"):
         merged.to_csv(w_path+code+'/'+csvs[i].split('/')[-1])
         print(csvs[i],'计算完成')
 
+def parse_tdx_rawdata_1d_threads(args):
+    with multiprocessing.Pool(processes=8) as pool:
+        # results=pool.map(huice_nd,args)
+        results = pool.starmap(parse_tdx_rawdata_1d, args)
 
+def point_calc_hist_1d_threads(args):
+    with multiprocessing.Pool(processes=8) as pool:
+        # results=pool.map(huice_nd,args)
+        results = pool.starmap(point_calc_hist_1d, args)
 
 
 
 if __name__ == "__main__":
+    # 单线程
     # gp = 'TQQQ'
-    # gps=['TSLA','PDD','NVDA','AAPL']
-    # gps=['AMD','BABA','GOOGL','MSFT']
-    gps = ['TQQQ']
-    for gp in gps:
-        # parse_tdx_rawdata_1d(
-        #     r_path="./data_tdx_raw/74#"+gp+".txt", code=gp, w_path="./data_server/"
-        # )
-        point_calc_hist_1d(code = gp)
+    gps=['TSLA','PDD','NVDA','AAPL','AMD','BABA','GOOGL','MSFT']
+    # gps = ['TQQQ']
+    # for gp in gps:
+    #     parse_tdx_rawdata_1d(
+    #         r_path="./data_tdx_raw/74#"+gp+".txt", code=gp, w_path="./data_server/"
+    #     )
+        # point_calc_hist_1d(code = gp)
     # print(1)
+    # 多线程
+    # args = []
+    # for gp in gps:
+    #     args.append(["./data_tdx_raw/74#" + gp + ".txt", gp, "./data_server/"])
+    # parse_tdx_rawdata_1d_threads(args=args)
+
+    args = []
+    for gp in gps:
+        args.append([gp,"./data_server/","./data_ready/"])
+    point_calc_hist_1d_threads(args)
+
+

@@ -1,0 +1,17 @@
+,0
+code,BABA
+trade_days,15
+win_days,6
+win_sells,10
+lose_sells,10
+max_1d_profit,587.5100000000016
+max_1d_lost,-186.49599999999248
+start_day,20240102
+end_day,20240801
+start_cash,100000
+end_cash,100331.21599999999
+total_profit_rate,0.0033121599999998974
+buy_nums,20
+sell_nums,20
+avg_win_sell_profit,97.98590000000029
+avg_lose_sell_profit,-64.86430000000021

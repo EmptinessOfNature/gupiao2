@@ -39,7 +39,7 @@ def huice_1d(data, first_cash, zhiying_diff):
     data["sell_signal"] = icon_sell
 
     for i in range(len(data)):
-        zhiying_diff = data.loc[i,'atr5'] * 1
+        zhiying_diff = data.loc[i,'atr5'] * 3
         if i == 0:
             act_init_1d(data, i, first_cash)
             sell_no_mod_2 = 0
@@ -264,7 +264,7 @@ def huice_nd(code, atr_div_rate):
         / data_ops[data_ops.profit < 0].profit.count()
     )
 
-    stg_ver = "01"
+    stg_ver = "3xatr_5min"
     save_folder = os.path.join(
         "./data_huice/", stg_ver , datetime.now().strftime("%Y%m%d%H%M")
     )
@@ -273,15 +273,15 @@ def huice_nd(code, atr_div_rate):
     # else:
     #     user_input = input(
     #         f"策略版本 '{stg_ver}' 已经存在. 是否替换? (yes/no): ").strip().lower()
-    data_ops.to_csv(os.path.join(save_folder, code + str(atr_div_rate) + ".csv"))
+    data_ops.to_csv(os.path.join(save_folder, code + ".csv"))
     pd.DataFrame(stat_track, index=[0]).T.to_csv(
-        os.path.join(save_folder, code + str(atr_div_rate) + "_统计数据.csv")
+        os.path.join(save_folder, code + "_统计数据.csv")
     )
     return stat_track
 
 
 def huice_nd_threads(args):
-    with multiprocessing.Pool(processes=1) as pool:
+    with multiprocessing.Pool(processes=8) as pool:
         # results=pool.map(huice_nd,args)
         results = pool.starmap(huice_nd, args)
 
@@ -291,5 +291,10 @@ if __name__ == "__main__":
     # stat_track = huice_nd("TQQQ",9)
     # huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])
     # huice_nd_threads(args=[["TQQQ"] + [i] for i in range(1, 8)])
-    huice_nd("TQQQ",1)
+    # huice_nd("TQQQ",1)
+    gps = ['TSLA', 'PDD', 'NVDA', 'AAPL', 'AMD', 'BABA', 'GOOGL', 'MSFT']
+    args=[]
+    for gp in gps:
+        args.append([gp,1])
+    huice_nd_threads(args)
     print("done!")
