@@ -1,0 +1,17 @@
+,0
+code,AMD
+trade_days,19
+win_days,10
+win_sells,22
+lose_sells,11
+max_1d_profit,1532.1749999999986
+max_1d_lost,-2509.510000000011
+start_day,20240102
+end_day,20240801
+start_cash,100000
+end_cash,99364.08999999995
+total_profit_rate,-0.006359100000000506
+buy_nums,32
+sell_nums,33
+avg_win_sell_profit,444.878636363636
+avg_lose_sell_profit,-947.5672727272737

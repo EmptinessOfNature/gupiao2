@@ -1,0 +1,17 @@
+,0
+code,PDD
+trade_days,18
+win_days,11
+win_sells,18
+lose_sells,12
+max_1d_profit,1404.0259999999985
+max_1d_lost,-1136.3439999999937
+start_day,20240102
+end_day,20240801
+start_cash,100000
+end_cash,103244.10400000008
+total_profit_rate,0.03244104000000081
+buy_nums,35
+sell_nums,30
+avg_win_sell_profit,496.2754444444462
+avg_lose_sell_profit,-474.0711666666654

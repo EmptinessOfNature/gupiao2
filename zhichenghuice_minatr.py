@@ -7,7 +7,7 @@ from longport_utils import get_atr_longport
 from datetime import datetime
 
 
-def huice_1d(data, first_cash, zhiying_diff):
+def huice_1d(data, first_cash, n_atr):
     icon_buy = (
         (
             data["icon_1"].fillna(0)
@@ -39,7 +39,7 @@ def huice_1d(data, first_cash, zhiying_diff):
     data["sell_signal"] = icon_sell
 
     for i in range(len(data)):
-        zhiying_diff = data.loc[i,'atr5'] * 3
+        zhiying_diff = data.loc[i,'atr5'] * n_atr
         if i == 0:
             act_init_1d(data, i, first_cash)
             sell_no_mod_2 = 0
@@ -183,7 +183,7 @@ def act_init_1line(data, i):
             data.loc[i, "max_zhiying_prices"] += str(max_zhiying_prices[k]) + ";"
 
 
-def huice_nd(code, atr_div_rate):
+def huice_nd(code, n_atr,stg_ver):
     f_path = "./data_ready/"
     # code = "NVDA"
     # date = '20240417'
@@ -213,12 +213,12 @@ def huice_nd(code, atr_div_rate):
         # atr = get_atr_longport(code, date)
         atr=1
         if i == 0:
-            # data_done, cash = huice_1d(data, 100000, round(atr / atr_div_rate, 2))
+            # data_done, cash = huice_1d(data, 100000, round(atr / n_atr, 2))
             cash = 100000
             data_ops = ""
 
         # else:
-        data_done, cash = huice_1d(data, cash, round(atr / atr_div_rate, 2))
+        data_done, cash = huice_1d(data, cash,  n_atr)
         if (data_done.buy_signal.sum() > 0).any():
             data_op = data[
                 (data.sell_detail != "")
@@ -264,7 +264,7 @@ def huice_nd(code, atr_div_rate):
         / data_ops[data_ops.profit < 0].profit.count()
     )
 
-    stg_ver = "3xatr_5min"
+    # stg_ver = "3xatr_5min"
     save_folder = os.path.join(
         "./data_huice/", stg_ver , datetime.now().strftime("%Y%m%d%H%M")
     )
@@ -275,7 +275,7 @@ def huice_nd(code, atr_div_rate):
     #         f"策略版本 '{stg_ver}' 已经存在. 是否替换? (yes/no): ").strip().lower()
     data_ops.to_csv(os.path.join(save_folder, code + ".csv"))
     pd.DataFrame(stat_track, index=[0]).T.to_csv(
-        os.path.join(save_folder, code + "_统计数据.csv")
+        os.path.join(save_folder, code + "_stat.csv")
     )
     return stat_track
 
@@ -295,6 +295,6 @@ if __name__ == "__main__":
     gps = ['TSLA', 'PDD', 'NVDA', 'AAPL', 'AMD', 'BABA', 'GOOGL', 'MSFT']
     args=[]
     for gp in gps:
-        args.append([gp,1])
+        args.append([gp,0.8,'0.8x5min_atr'])
     huice_nd_threads(args)
     print("done!")
