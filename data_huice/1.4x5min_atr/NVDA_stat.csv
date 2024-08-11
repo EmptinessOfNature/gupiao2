@@ -1,0 +1,17 @@
+,0
+code,NVDA
+trade_days,13
+win_days,8
+win_sells,16
+lose_sells,8
+max_1d_profit,1557.5140000000029
+max_1d_lost,-1303.1289999999963
+start_day,20240102
+end_day,20240801
+start_cash,100000
+end_cash,103283.61299999995
+total_profit_rate,0.03283612999999952
+buy_nums,22
+sell_nums,24
+avg_win_sell_profit,456.3178125
+avg_lose_sell_profit,-502.18399999999934

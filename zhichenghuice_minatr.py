@@ -39,7 +39,7 @@ def huice_1d(data, first_cash, n_atr):
     data["sell_signal"] = icon_sell
 
     for i in range(len(data)):
-        zhiying_diff = data.loc[i,'atr5'] * n_atr
+        zhiying_diff = data.loc[i, "atr5"] * n_atr
         if i == 0:
             act_init_1d(data, i, first_cash)
             sell_no_mod_2 = 0
@@ -183,7 +183,7 @@ def act_init_1line(data, i):
             data.loc[i, "max_zhiying_prices"] += str(max_zhiying_prices[k]) + ";"
 
 
-def huice_nd(code, n_atr,stg_ver):
+def huice_nd(code, n_atr, stg_ver):
     f_path = "./data_ready/"
     # code = "NVDA"
     # date = '20240417'
@@ -211,14 +211,14 @@ def huice_nd(code, n_atr,stg_ver):
         date = csvs[i].split("/")[-1].split(".")[0]
         data = pd.read_csv(csvs[i], index_col=0)
         # atr = get_atr_longport(code, date)
-        atr=1
+        atr = 1
         if i == 0:
             # data_done, cash = huice_1d(data, 100000, round(atr / n_atr, 2))
             cash = 100000
             data_ops = ""
 
         # else:
-        data_done, cash = huice_1d(data, cash,  n_atr)
+        data_done, cash = huice_1d(data, cash, n_atr)
         if (data_done.buy_signal.sum() > 0).any():
             data_op = data[
                 (data.sell_detail != "")
@@ -266,7 +266,7 @@ def huice_nd(code, n_atr,stg_ver):
 
     # stg_ver = "3xatr_5min"
     save_folder = os.path.join(
-        "./data_huice/", stg_ver , datetime.now().strftime("%Y%m%d%H%M")
+        "./data_huice/", stg_ver
     )
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
@@ -286,15 +286,52 @@ def huice_nd_threads(args):
         results = pool.starmap(huice_nd, args)
 
 
+def stat_huizong(root_folder):
+    # root_folder = './data_huice/1.2x5min_atr/'
+    csvs = sorted(os.listdir(root_folder))
+    stat_csvs = []
+    rets = []
+    for csv in csvs:
+        if 'stat' in csv:
+            stat_csvs.append(csv)
+    for csv in stat_csvs:
+        df=pd.read_csv(root_folder+csv)
+        df=df.T
+        df.columns=df.iloc[0]
+        rets.append([df['code'][1],float(df['total_profit_rate'][1])])
+    df = pd.DataFrame(rets)
+    df.columns=['code','total_profit_rate']
+    df.loc[len(df)]=['平均',float(df['total_profit_rate'].mean())]
+    df.to_csv(root_folder+'overall.csv')
+    return df
+
+
+
+
+
 if __name__ == "__main__":
+
     # huice_1d()
     # stat_track = huice_nd("TQQQ",9)
     # huice_nd_threads(["AMD","BABA","GOOGL","MSFT","PDD","TQQQ","TSLA","AAPL"])
     # huice_nd_threads(args=[["TQQQ"] + [i] for i in range(1, 8)])
     # huice_nd("TQQQ",1)
-    gps = ['TSLA', 'PDD', 'NVDA', 'AAPL', 'AMD', 'BABA', 'GOOGL', 'MSFT']
-    args=[]
-    for gp in gps:
-        args.append([gp,0.8,'0.8x5min_atr'])
+    gps = ["TSLA", "PDD", "NVDA", "AAPL", "AMD", "BABA", "GOOGL", "MSFT"]
+    args = []
+    stg_names = []
+
+    for x_atr in np.arange(0.1, 2.1, 0.1):
+        stg_name = str(round(float(x_atr), 2)) + "x5min_atr"
+        if stg_name not in stg_names:
+            stg_names.append(stg_name)
+        for gp in gps:
+            args.append(
+                [gp, round(float(x_atr), 2), stg_name]
+            )
     huice_nd_threads(args)
     print("done!")
+    for stg_name in stg_names:
+        rf = './data_huice/'+stg_name+'/'
+        stat_huizong(rf)
+        print(rf+'回测统计完成')
+
