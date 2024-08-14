@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore")
 def parse_tdx_rawdata_1d(r_path, code, w_path="./data_server/"):
     # 将通达信的原始数据解析为每一天的数据，存在文件夹中
     df = pd.read_csv(r_path, sep="\t", skiprows=1, encoding="gbk")[:-1]
-    df.columns = ["date", "time", "open", "high", "low", "close", "vol", "cje"]
+    df.columns = ["date", "time", "open", "high", "low", "close", "vol", "turnover"]
     df["time"] = df["time"].astype(int).astype(str).str.zfill(4)
     df["date"] = df["date"].str.replace("/", "-")
     df["vol"] = df["vol"].astype(int)
@@ -25,7 +25,7 @@ def parse_tdx_rawdata_1d(r_path, code, w_path="./data_server/"):
         + ":00"
     )
 
-    ret = df[["tdx_dt", "open", "close", "high", "low", "vol"]]
+    ret = df[["tdx_dt", "open", "close", "high", "low", "vol","turnover"]]
     ret["dt"] = pd.to_datetime(ret["tdx_dt"])
 
     def add_day_if_before_11(time):
@@ -34,7 +34,7 @@ def parse_tdx_rawdata_1d(r_path, code, w_path="./data_server/"):
         return time
 
     ret["dt"] = ret["dt"].apply(add_day_if_before_11)
-    data = ret[["dt", "open", "close", "high", "low", "vol"]]
+    data = ret[["dt", "open", "close", "high", "low", "vol","turnover"]]
 
     date_list = sorted(data["dt"].dt.date.unique())
     for i in range(max(len(date_list) - 1, 1)):  # 遍历所有输入data中的每个日期
@@ -125,10 +125,10 @@ if __name__ == "__main__":
         # point_calc_hist_1d(code = gp)
     # print(1)
     # 多线程
-    # args = []
-    # for gp in gps:
-    #     args.append(["./data_tdx_raw/74#" + gp + ".txt", gp, "./data_server/"])
-    # parse_tdx_rawdata_1d_threads(args=args)
+    args = []
+    for gp in gps:
+        args.append(["./data_tdx_raw/74#" + gp + ".txt", gp, "./data_server/"])
+    parse_tdx_rawdata_1d_threads(args=args)
 
     args = []
     for gp in gps:
