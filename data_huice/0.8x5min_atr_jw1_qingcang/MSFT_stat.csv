@@ -1,0 +1,17 @@
+,0
+code,MSFT
+trade_days,8
+win_days,1
+win_sells,2
+lose_sells,12
+max_1d_profit,8.639999999998281
+max_1d_lost,-241.9100000000069
+start_day,20240102
+end_day,20240801
+start_cash,100000
+end_cash,99405.81399999998
+total_profit_rate,-0.0059418600000001875
+buy_nums,14
+sell_nums,14
+avg_win_sell_profit,8.309999999998752
+avg_lose_sell_profit,-50.90050000000134
