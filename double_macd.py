@@ -49,19 +49,53 @@ def tdx_raw2_kline(r_path, period):
 
 
 def huice(data):
+    def is_v(data, i, col, pre_length, post_length, direction):
+        i_seq = list(range(i - pre_length - post_length, i + 1))
+        diffs = np.array(
+            data.loc[i_seq, col].diff().reset_index(drop=True).drop(index=0)
+        )
+        if (
+            direction == "bottom"
+            and (diffs[0:pre_length] < 0).all()
+            and (diffs[pre_length : pre_length + post_length] > 0).all()
+        ):
+            return True
+
+        if (
+                direction == "top"
+                and (diffs[0:pre_length] > 0).all()
+                and (diffs[pre_length: pre_length + post_length] < 0).all()
+        ):
+            return True
+        return False
+
     for i in range(len(data)):
         if i <= 2:
             continue
+        # 做多
         elif (
             data.loc[i, "m1"] > 0
             and data.loc[i, "m2"] < 0
-            and abs(data.loc[i, "m1"]) > abs(data.loc[i, "m2"])*2
-            and (
-                data.loc[i - 2, "m2"] >= data.loc[i - 1, "m2"]
-                and data.loc[i, "m2"] > data.loc[i - 1, "m2"]
-            )
+            and abs(data.loc[i, "m1"]) > abs(data.loc[i, "m2"]) * 2
+            # and (
+            #     data.loc[i - 2, "m2"] >= data.loc[i - 1, "m2"]
+            #     and data.loc[i, "m2"] > data.loc[i - 1, "m2"]
+            # )
+            and is_v(data,i,'m2',3,2,"bottom")
         ):
             data.loc[i, "long"] = 1
+        # 做空
+        elif (
+            data.loc[i, "m1"] < 0
+            and data.loc[i, "m2"] > 0
+            and abs(data.loc[i, "m1"]) > abs(data.loc[i, "m2"]) * 2
+            # and (
+            #     data.loc[i - 2, "m2"] <= data.loc[i - 1, "m2"]
+            #     and data.loc[i, "m2"] < data.loc[i - 1, "m2"]
+            # )
+            and is_v(data,i,'m2',3,2,"top")
+        ):
+            data.loc[i, "short"] = 1
     return data
 
 
@@ -74,6 +108,6 @@ if __name__ == "__main__":
     data["long"] = 0
     data["short"] = 0
     data = huice(data)
-    data.to_csv('./data_huice_2/dm_TQQQ.csv')
+    data.to_csv("./data_huice_dm/TQQQ_dm.csv")
 
     print(1)
