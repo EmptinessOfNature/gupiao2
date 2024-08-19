@@ -5,7 +5,6 @@ from datetime import datetime
 from plotly.subplots import make_subplots
 
 
-
 def tdx_raw2_kline(r_path, period):
     df = pd.read_csv(r_path, sep="\t", skiprows=1, encoding="gbk")[:-1]
     df.columns = ["date", "time", "open", "high", "low", "close", "vol", "turnover"]
@@ -53,8 +52,12 @@ def tdx_raw2_kline(r_path, period):
     return ret
 
 
-def huice(data):
+def longport_kline(agent, period):
+    resp = agent.get_data_1D("TQQQ")
+    print(1)
 
+
+def calc_buy_sell_point(data):
     # 判断是否是v形
     def is_v(data, i, col, pre_length, post_length, direction):
         i_seq = list(range(i - pre_length - post_length, i + 1))
@@ -76,6 +79,7 @@ def huice(data):
             return True
         return False
 
+    # 判断是否穿0轴
     def is_chuan(data, i, col, pre_length, post_length, direction, thresh):
         i_seq = list(range(i - pre_length - post_length, i + 1))
         ret = np.array(data.loc[i_seq, col].reset_index(drop=True))
@@ -94,42 +98,54 @@ def huice(data):
         return False
 
     for i in range(len(data)):
+        long_rules = []
+        long_rules.append(
+            data.loc[i, "m1"] > 0
+            and abs(data.loc[i, "m1"]) > 1
+            and is_chuan(data, i, "m2", 1, 1, "up", 0)
+        )
+        # long_rules.append(
+        #     data.loc[i, "m1"] > 0
+        #     and abs(data.loc[i, "m1"]) > 1
+        #     and data.loc[i, "m2"] < 0
+        #     and is_v(data, i, "m2", 3, 3, "bottom")
+        # )
+
+        short_rules = []
+        short_rules.append(
+            data.loc[i, "m1"] < 0
+            and abs(data.loc[i, "m1"]) > 1
+            and is_chuan(data, i, "m2", 1, 1, "down", 0)
+        )
+        # short_rules.append(
+        #     data.loc[i, "m1"] < 0
+        #     and abs(data.loc[i, "m1"]) > 1
+        #     and data.loc[i, "m2"] > 0
+        #     and is_v(data, i, "m2", 3, 3, "top")
+        # )
+
         if i <= 2:
             continue
         # 做多
-        elif (
-            data.loc[i, "m1"] > 0
-            and abs(data.loc[i, "m1"]) > 1
-            # and data.loc[i, "m2"] < 0
-            and abs(data.loc[i, "m1"]) > abs(data.loc[i, "m2"]) * 2
-            # and is_v(data,i,'m2',2,2,"bottom")
-            and is_chuan(data, i, "m2", 1, 1, "up", 0)
-        ):
+        elif sum(long_rules) > 0:
             data.loc[i, "long"] = 1
         # 做空
-        elif (
-            data.loc[i, "m1"] < 0
-            and abs(data.loc[i, "m1"]) > 1
-            # and data.loc[i, "m2"] > 0
-            and abs(data.loc[i, "m1"]) > abs(data.loc[i, "m2"]) * 2
-            # and is_v(data,i,'m2',2,2,"top")
-            and is_chuan(data, i, "m2", 1, 1, "down", 0)
-        ):
+        elif sum(short_rules) > 0:
             data.loc[i, "short"] = 1
     return data
 
 
-if __name__ == "__main__":
-    data = tdx_raw2_kline("./data_tdx_raw/74#TQQQ.txt", period="1D")
+def double_macd(data):
     m1 = MACD(data.close, 55, 89, 1)
     m2 = MACD(data.close, 13, 21, 1)
     data["m1"] = m1[0]
     data["m2"] = m2[0]
     data["long"] = 0
     data["short"] = 0
-    data = huice(data)
-    data.to_csv("./data_huice_dm/TQQQ_dm.csv")
+    return data
 
+
+def draw_line(data, code=""):
     long_signals = data[data.long > 0].reset_index(drop=True)
     short_signals = data[data.short > 0].reset_index(drop=True)
     kline_1D = go.Candlestick(
@@ -143,14 +159,14 @@ if __name__ == "__main__":
         x=long_signals["dt_1D"],
         y=long_signals["close"] * 0.9,
         mode="markers",
-        marker=dict(symbol="triangle-up",size=10),
+        marker=dict(symbol="triangle-up", size=10),
         name="做多",
     )
     trace_2 = go.Scatter(
         x=short_signals["dt_1D"],
         y=short_signals["close"] * 1.2,
         mode="markers",
-        marker=dict(symbol="triangle-down",size=10),
+        marker=dict(symbol="triangle-down", size=10),
         name="做空",
     )
     fig = make_subplots(
@@ -164,16 +180,36 @@ if __name__ == "__main__":
     )
 
     # fig = go.Figure(data=[kline_1D, trace_1, trace_2])
-    fig.add_trace(kline_1D,row=1,col=1)
+    fig.add_trace(kline_1D, row=1, col=1)
     fig.add_trace(trace_1, row=1, col=1)
     fig.add_trace(trace_2, row=1, col=1)
-    fig.add_trace(go.Scatter(x=data['dt_1D'],y=data['m1']),row=2,col=1)
-    fig.add_trace(go.Scatter(x=data['dt_1D'], y=data['m2']), row=2, col=1)
-    fig.add_trace(go.Scatter(x=long_signals['dt_1D'], y=[0]*len(long_signals),mode="markers"), row=2, col=1)
-    fig.add_trace(go.Scatter(x=short_signals['dt_1D'], y=[0]*len(long_signals),mode="markers"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=data["dt_1D"], y=data["m1"]), row=2, col=1)
+    fig.add_trace(go.Scatter(x=data["dt_1D"], y=data["m2"]), row=2, col=1)
+    fig.add_trace(
+        go.Scatter(x=long_signals["dt_1D"], y=[0] * len(long_signals), mode="markers"),
+        row=2,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=short_signals["dt_1D"], y=[0] * len(short_signals), mode="markers"
+        ),
+        row=2,
+        col=1,
+    )
 
     fig.update_layout(xaxis_rangeslider_visible=False)
+    fig.update_layout(title_text=code)
+    print(len(long_signals), len(short_signals))
 
     fig.show()
+
+
+if __name__ == "__main__":
+    code = "MSFT"
+    data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="1D")
+    data = double_macd(data)
+    data = calc_buy_sell_point(data)
+    data.to_csv("./data_huice_dm/" + code + ".csv")
+    draw_line(data, code)
     print(1)
-    print(len(long_signals),len(short_signals))
