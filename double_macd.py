@@ -104,12 +104,13 @@ def calc_buy_sell_point(data):
             and abs(data.loc[i, "m1"]) > 1
             and is_chuan(data, i, "m2", 1, 1, "up", 0)
         )
-        # long_rules.append(
-        #     data.loc[i, "m1"] > 0
-        #     and abs(data.loc[i, "m1"]) > 1
-        #     and data.loc[i, "m2"] < 0
-        #     and is_v(data, i, "m2", 3, 3, "bottom")
-        # )
+        long_rules.append(
+            data.loc[i, "m1"] > 0
+            and abs(data.loc[i, "m1"]) > 1
+            and data.loc[i, "m2"] < 0
+            and is_v(data, i, "m2", 3, 3, "bottom")
+            and abs(data.loc[i, "m1"])>=2*abs(data.loc[i, "m2"])
+        )
 
         short_rules = []
         short_rules.append(
@@ -117,12 +118,13 @@ def calc_buy_sell_point(data):
             and abs(data.loc[i, "m1"]) > 1
             and is_chuan(data, i, "m2", 1, 1, "down", 0)
         )
-        # short_rules.append(
-        #     data.loc[i, "m1"] < 0
-        #     and abs(data.loc[i, "m1"]) > 1
-        #     and data.loc[i, "m2"] > 0
-        #     and is_v(data, i, "m2", 3, 3, "top")
-        # )
+        short_rules.append(
+            data.loc[i, "m1"] < 0
+            and abs(data.loc[i, "m1"]) > 1
+            and data.loc[i, "m2"] > 0
+            and is_v(data, i, "m2", 3, 3, "top")
+            and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
+        )
 
         if i <= 2:
             continue
@@ -206,7 +208,7 @@ def draw_line(data, code=""):
 
 
 if __name__ == "__main__":
-    code = "MSFT"
+    code = "TQQQ"
     data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="1D")
     data = double_macd(data)
     data = calc_buy_sell_point(data)
