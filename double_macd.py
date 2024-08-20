@@ -101,6 +101,11 @@ def calc_buy_sell_point(data):
             return True
         return False
 
+    def speed(data,i,col,length):
+        if i<length:
+            return 0
+        return abs((data.loc[i-length,col]-data.loc[i,col])/length)
+
     data["long"] = 0
     data["short"] = 0
     data["long_stop"] = 0
@@ -112,6 +117,7 @@ def calc_buy_sell_point(data):
             data.loc[i, "m1"] > 0
             and abs(data.loc[i, "m1"]) > 1
             and is_chuan(data, i, "m2", 1, 1, "up", 0)
+            and speed(data,i,"m2",2)>0.1
         )
         long_rules.append(
             data.loc[i, "m1"] > 0
@@ -123,7 +129,8 @@ def calc_buy_sell_point(data):
         # 做多止盈止损条件
         long_stop_rules = []
         long_stop_rules.append(is_chuan(data,i,"m2",1,1,"down",0))
-        long_stop_rules.append(is_v(data, i, "m2", 2, 2, "top"))
+        long_stop_rules.append(is_v(data, i, "m2", 3, 3, "top"))
+        long_stop_rules.append(speed(data,i,"m2",2)<0.01)
 
         # 做空开单条件
         short_rules = []
@@ -131,6 +138,7 @@ def calc_buy_sell_point(data):
             data.loc[i, "m1"] < 0
             and abs(data.loc[i, "m1"]) > 1
             and is_chuan(data, i, "m2", 1, 1, "down", 0)
+            and speed(data, i, "m2", 2) > 0.1
         )
         short_rules.append(
             data.loc[i, "m1"] < 0
@@ -142,7 +150,8 @@ def calc_buy_sell_point(data):
         # 做空止盈止损条件
         short_stop_rules = []
         short_stop_rules.append(is_chuan(data,i,"m2",1,1,"up",0))
-        short_stop_rules.append(is_v(data, i, "m2", 2, 2, "bottom"))
+        short_stop_rules.append(is_v(data, i, "m2", 3, 3, "bottom"))
+        short_stop_rules.append(speed(data,i,"m2",2)<0.01)
 
         if i <= 2:
             continue
@@ -171,6 +180,7 @@ def double_macd(data):
 
 def huice(data):
     data['long_in'],data['long_out'],data['short_in'],data['short_out']=0,0,0,0
+    # data['profit_rate'] = 0
 
     long_in_ids = data[data['long']==1].index
     short_in_ids = data[data['short']==1].index
@@ -179,19 +189,23 @@ def huice(data):
         first_long_end = find_area[find_area["long_stop"]==1].index[0]
         data.loc[id,'long_in']=1
         data.loc[first_long_end,"long_out"]=1
+        data.loc[first_long_end,'profit_rate'] = data.loc[first_long_end+1,'open']/data.loc[id+1,'open']-1
     for id in short_in_ids:
         find_area = data.iloc[id + 1:]
         first_short_end = find_area[find_area["short_stop"] == 1].index[0]
         data.loc[id, 'short_in'] = 1
         data.loc[first_short_end, "short_out"] = 1
+        data.loc[first_short_end,'profit_rate'] = (data.loc[id+1,'open'] - data.loc[first_short_end+1,'open'])/data.loc[id+1,'open']
+
     return data
 
 
 def draw_line(data, code=""):
-    long_signals = data[data.long > 0].reset_index(drop=True)
-    short_signals = data[data.short > 0].reset_index(drop=True)
-    long_stop_signals = data[data.long_stop > 0].reset_index(drop=True)
-    short_stop_signals = data[data.short_stop > 0].reset_index(drop=True)
+    long_in_signals = data[data.long_in > 0].reset_index(drop=True)
+    short_in_signals = data[data.short_in > 0].reset_index(drop=True)
+    long_out_signals = data[data.long_out > 0].reset_index(drop=True)
+    short_out_signals = data[data.short_out > 0].reset_index(drop=True)
+    # long_profit_rates = data[data.long_out>0].reset_index(drop=True)
 
     kline_1D = go.Candlestick(
         x=data["dt_1D"],
@@ -201,31 +215,39 @@ def draw_line(data, code=""):
         close=data["close"],
     )
     trace_long = go.Scatter(
-        x=long_signals["dt_1D"],
-        y=long_signals["close"] * 0.9,
+        x=long_in_signals["dt_1D"],
+        y=long_in_signals["close"] * 0.9,
         mode="markers",
         marker=dict(symbol="triangle-up", size=10),
         name="做多",
     )
     trace_short = go.Scatter(
-        x=short_signals["dt_1D"],
-        y=short_signals["close"] * 1.2,
+        x=short_in_signals["dt_1D"],
+        y=short_in_signals["close"] * 1.2,
         mode="markers",
         marker=dict(symbol="triangle-down", size=10),
         name="做空",
     )
 
     trace_long_stop = go.Scatter(
-        x=long_stop_signals["dt_1D"],
-        y=long_stop_signals["close"] * 0.9,
-        mode="markers",
+        x=long_out_signals["dt_1D"],
+        y=long_out_signals["close"] * 0.9,
+        # text=long_out_signals['profit_rate'],
+        text = ['{:.1f}%'.format(p*100) for p in np.array(long_out_signals['profit_rate'])],
+        textposition="bottom center",
+        textfont=dict(size=16, color="black"),
+        mode="markers+text",
         marker=dict(symbol="arrow-down", size=10),
         name="多单结束",
     )
     trace_short_stop = go.Scatter(
-        x=short_stop_signals["dt_1D"],
-        y=short_stop_signals["close"] * 1.2,
-        mode="markers",
+        x=short_out_signals["dt_1D"],
+        y=short_out_signals["close"] * 1.2,
+        # text = short_out_signals['profit_rate'],
+        text=['{:.1f}%'.format(p * 100) for p in np.array(short_out_signals['profit_rate'])],
+        textposition="bottom center",
+        textfont=dict(size=16, color="black"),
+        mode="markers+text",
         marker=dict(symbol="arrow-up", size=10),
         name="空单结束",
     )
@@ -248,13 +270,13 @@ def draw_line(data, code=""):
     fig.add_trace(go.Scatter(x=data["dt_1D"], y=data["m1"]), row=2, col=1)
     fig.add_trace(go.Scatter(x=data["dt_1D"], y=data["m2"]), row=2, col=1)
     fig.add_trace(
-        go.Scatter(x=long_signals["dt_1D"], y=[0] * len(long_signals), mode="markers"),
+        go.Scatter(x=long_in_signals["dt_1D"], y=[0] * len(long_in_signals), mode="markers"),
         row=2,
         col=1,
     )
     fig.add_trace(
         go.Scatter(
-            x=short_signals["dt_1D"], y=[0] * len(short_signals), mode="markers"
+            x=short_in_signals["dt_1D"], y=[0] * len(short_in_signals), mode="markers"
         ),
         row=2,
         col=1,
@@ -262,17 +284,17 @@ def draw_line(data, code=""):
 
     fig.update_layout(xaxis_rangeslider_visible=False)
     fig.update_layout(title_text=code)
-    print(len(long_signals), len(short_signals))
+    print(len(long_in_signals), len(short_in_signals))
 
     fig.show()
 
 
 if __name__ == "__main__":
-    code = "TQQQ"
+    code = "AMD"
     data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="1D")
     data = double_macd(data)
     data = calc_buy_sell_point(data)
     data = huice(data)
     data.to_csv("./data_huice_dm/" + code + ".csv")
     draw_line(data, code)
-    print(1)
+    print(data['profit_rate'].sum())
