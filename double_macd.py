@@ -60,6 +60,8 @@ def longport_kline(agent, period):
 def calc_buy_sell_point(data):
     # 判断是否是v形
     def is_v(data, i, col, pre_length, post_length, direction):
+        if i<pre_length+post_length:
+            return False
         i_seq = list(range(i - pre_length - post_length, i + 1))
         diffs = np.array(
             data.loc[i_seq, col].diff().reset_index(drop=True).drop(index=0)
@@ -81,6 +83,8 @@ def calc_buy_sell_point(data):
 
     # 判断是否穿0轴
     def is_chuan(data, i, col, pre_length, post_length, direction, thresh):
+        if i < pre_length+post_length:
+            return False
         i_seq = list(range(i - pre_length - post_length, i + 1))
         ret = np.array(data.loc[i_seq, col].reset_index(drop=True))
         if (
@@ -97,7 +101,12 @@ def calc_buy_sell_point(data):
             return True
         return False
 
+    data["long"] = 0
+    data["short"] = 0
+    data["long_stop"] = 0
+    data["short_stop"] = 0
     for i in range(len(data)):
+        # 做多开单条件，多个append的条件是或的关系，下同
         long_rules = []
         long_rules.append(
             data.loc[i, "m1"] > 0
@@ -109,9 +118,14 @@ def calc_buy_sell_point(data):
             and abs(data.loc[i, "m1"]) > 1
             and data.loc[i, "m2"] < 0
             and is_v(data, i, "m2", 3, 3, "bottom")
-            and abs(data.loc[i, "m1"])>=2*abs(data.loc[i, "m2"])
+            and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
         )
+        # 做多止盈止损条件
+        long_stop_rules = []
+        long_stop_rules.append(is_chuan(data,i,"m2",1,1,"down",0))
+        long_stop_rules.append(is_v(data, i, "m2", 2, 2, "top"))
 
+        # 做空开单条件
         short_rules = []
         short_rules.append(
             data.loc[i, "m1"] < 0
@@ -125,15 +139,26 @@ def calc_buy_sell_point(data):
             and is_v(data, i, "m2", 3, 3, "top")
             and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
         )
+        # 做空止盈止损条件
+        short_stop_rules = []
+        short_stop_rules.append(is_chuan(data,i,"m2",1,1,"up",0))
+        short_stop_rules.append(is_v(data, i, "m2", 2, 2, "bottom"))
 
         if i <= 2:
             continue
         # 做多
-        elif sum(long_rules) > 0:
+        if sum(long_rules) > 0:
             data.loc[i, "long"] = 1
         # 做空
-        elif sum(short_rules) > 0:
+        if sum(short_rules) > 0:
             data.loc[i, "short"] = 1
+        # 多单了结
+        if sum(long_stop_rules) > 0:
+            data.loc[i, "long_stop"] = 1
+        # 空单了结
+        if sum(short_stop_rules) > 0:
+            data.loc[i, "short_stop"] = 1
+
     return data
 
 
@@ -142,14 +167,32 @@ def double_macd(data):
     m2 = MACD(data.close, 13, 21, 1)
     data["m1"] = m1[0]
     data["m2"] = m2[0]
-    data["long"] = 0
-    data["short"] = 0
+    return data
+
+def huice(data):
+    data['long_in'],data['long_out'],data['short_in'],data['short_out']=0,0,0,0
+
+    long_in_ids = data[data['long']==1].index
+    short_in_ids = data[data['short']==1].index
+    for id in long_in_ids:
+        find_area = data.iloc[id+1:]
+        first_long_end = find_area[find_area["long_stop"]==1].index[0]
+        data.loc[id,'long_in']=1
+        data.loc[first_long_end,"long_out"]=1
+    for id in short_in_ids:
+        find_area = data.iloc[id + 1:]
+        first_short_end = find_area[find_area["short_stop"] == 1].index[0]
+        data.loc[id, 'short_in'] = 1
+        data.loc[first_short_end, "short_out"] = 1
     return data
 
 
 def draw_line(data, code=""):
     long_signals = data[data.long > 0].reset_index(drop=True)
     short_signals = data[data.short > 0].reset_index(drop=True)
+    long_stop_signals = data[data.long_stop > 0].reset_index(drop=True)
+    short_stop_signals = data[data.short_stop > 0].reset_index(drop=True)
+
     kline_1D = go.Candlestick(
         x=data["dt_1D"],
         open=data["open"],
@@ -157,19 +200,34 @@ def draw_line(data, code=""):
         low=data["low"],
         close=data["close"],
     )
-    trace_1 = go.Scatter(
+    trace_long = go.Scatter(
         x=long_signals["dt_1D"],
         y=long_signals["close"] * 0.9,
         mode="markers",
         marker=dict(symbol="triangle-up", size=10),
         name="做多",
     )
-    trace_2 = go.Scatter(
+    trace_short = go.Scatter(
         x=short_signals["dt_1D"],
         y=short_signals["close"] * 1.2,
         mode="markers",
         marker=dict(symbol="triangle-down", size=10),
         name="做空",
+    )
+
+    trace_long_stop = go.Scatter(
+        x=long_stop_signals["dt_1D"],
+        y=long_stop_signals["close"] * 0.9,
+        mode="markers",
+        marker=dict(symbol="arrow-down", size=10),
+        name="多单结束",
+    )
+    trace_short_stop = go.Scatter(
+        x=short_stop_signals["dt_1D"],
+        y=short_stop_signals["close"] * 1.2,
+        mode="markers",
+        marker=dict(symbol="arrow-up", size=10),
+        name="空单结束",
     )
     fig = make_subplots(
         rows=2,
@@ -181,10 +239,12 @@ def draw_line(data, code=""):
         row_width=[1, 1],
     )
 
-    # fig = go.Figure(data=[kline_1D, trace_1, trace_2])
+    # fig = go.Figure(data=[kline_1D, trace_long, trace_short])
     fig.add_trace(kline_1D, row=1, col=1)
-    fig.add_trace(trace_1, row=1, col=1)
-    fig.add_trace(trace_2, row=1, col=1)
+    fig.add_trace(trace_long, row=1, col=1)
+    fig.add_trace(trace_short, row=1, col=1)
+    fig.add_trace(trace_long_stop,row=1,col=1)
+    fig.add_trace(trace_short_stop,row=1,col=1)
     fig.add_trace(go.Scatter(x=data["dt_1D"], y=data["m1"]), row=2, col=1)
     fig.add_trace(go.Scatter(x=data["dt_1D"], y=data["m2"]), row=2, col=1)
     fig.add_trace(
@@ -212,6 +272,7 @@ if __name__ == "__main__":
     data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="1D")
     data = double_macd(data)
     data = calc_buy_sell_point(data)
+    data = huice(data)
     data.to_csv("./data_huice_dm/" + code + ".csv")
     draw_line(data, code)
     print(1)
