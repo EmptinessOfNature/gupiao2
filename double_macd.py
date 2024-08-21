@@ -285,7 +285,7 @@ def draw_line(data, code=""):
     fig.update_layout(xaxis_rangeslider_visible=False)
     fig.update_layout(title_text=code)
     print(len(long_in_signals), len(short_in_signals))
-
+    fig.write_image("./data_huice_dm/fig.png")
     fig.show()
 
 
