@@ -60,13 +60,13 @@ def longport_kline(agent, period):
 def speed_abs(data, i, col, length):
     if i < length:
         return 0
-    return abs((data.loc[i - length, col] - data.loc[i, col]) / length)
+    return abs((data.loc[i, col] - data.loc[i - length, col]) / length)
 
 
 def speed(data, i, col, length):
     if i < length:
         return 0
-    return (data.loc[i - length, col] - data.loc[i, col]) / length
+    return (data.loc[i, col] - data.loc[i - length, col]) / length
 
 
 def is_pos(data, i, col, length):
@@ -206,11 +206,11 @@ def calc_point_duanxian_jw(data):
         )
         # 买卖点规则
         long_start_rules.append(
-            is_pos(data, i, "duanxian", 2) and speed(data, i, "jw", 3) > 0
+            is_pos(data, i, "duanxian", 6) and speed(data, i, "jw", 3) > 0 and data.loc[i,'duanxian']>1
         )
         long_end_rules.append(is_neg(data, i, "duanxian", 2))
         short_start_rules.append(
-            is_neg(data, i, "duanxian", 2) and speed(data, i, "jw", 3) < 0
+            is_neg(data, i, "duanxian", 6) and speed(data, i, "jw", 3) < 0 and data.loc[i,'duanxian']<-1
         )
         short_end_rules.append(is_pos(data, i, "duanxian", 2))
         if i < 2:
@@ -261,7 +261,8 @@ def duanxian(data):
         B4 = SMA(B3, 3, 1)
         B5 = SMA(B4, 3, 1) + 100
         R6 = B5 - B2
-        data["duanxian"] = R6
+        data["R6"] = R6
+        data["duanxian"] = data["R6"].diff()
         return data
     except:
         print("短线操盘error")
@@ -388,6 +389,15 @@ def draw_line(data, code=""):
     # fig.write_image("./data_huice_dm/"+code+"_fig.png")
     fig.show()
 
+def draw_line_jw_duanxian(data):
+    kline_1D = go.Candlestick(
+        x=data["dt_1D"],
+        open=data["open"],
+        high=data["high"],
+        low=data["low"],
+        close=data["close"],
+    )
+
 
 if __name__ == "__main__":
     code = "PDD"
@@ -395,9 +405,11 @@ if __name__ == "__main__":
     data = double_macd(data)
     data = jw(data)
     data = duanxian(data)
-    data = calc_point_duanxian_jw(data)
+    # 双macd
     # data = calc_buy_sell_point(data)
-    data = huice(data)
+    # data = huice(data)
+    # 短线36+jw
+    data = calc_point_duanxian_jw(data)
     data.to_csv("./data_huice_dm/" + code + ".csv")
     # draw_line(data, code)
-    print(data["profit_rate"].sum())
+    # print(data["profit_rate"].sum())
