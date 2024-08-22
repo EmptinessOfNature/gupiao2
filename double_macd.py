@@ -206,23 +206,153 @@ def calc_point_duanxian_jw(data):
         )
         # 买卖点规则
         long_start_rules.append(
-            is_pos(data, i, "duanxian", 6) and speed(data, i, "jw", 3) > 0 and data.loc[i,'duanxian']>1
+            # is_pos(data, i, "duanxian", 1) and speed(data, i, "jw", 3) > 0 and data.loc[i,'duanxian']>1
+            # is_pos(data, i, "duanxian", 3) and is_pos(data, i, "m1", 1) and  data.loc[i,'duanxian']>1
+            data.loc[i, "duanxian"]
+            > 0
         )
         long_end_rules.append(is_neg(data, i, "duanxian", 2))
         short_start_rules.append(
-            is_neg(data, i, "duanxian", 6) and speed(data, i, "jw", 3) < 0 and data.loc[i,'duanxian']<-1
+            # is_neg(data, i, "duanxian", 1) and speed(data, i, "jw", 3) < 0 and data.loc[i,'duanxian']<-1
+            # is_neg(data, i, "duanxian", 3) and is_neg(data, i, "m1", 1)  and data.loc[i,'duanxian']<-1
+            data.loc[i, "duanxian"]
+            < 0
         )
         short_end_rules.append(is_pos(data, i, "duanxian", 2))
         if i < 2:
             continue
         if sum(long_start_rules) > 0:
-            data.loc[i,"long_start"] = 1
+            data.loc[i, "long_start"] = 1
         if sum(long_end_rules) > 0:
-            data.loc[i,"long_end"] = 1
+            data.loc[i, "long_end"] = 1
         if sum(short_start_rules) > 0:
-            data.loc[i,"short_start"] = 1
+            data.loc[i, "short_start"] = 1
         if sum(short_end_rules) > 0:
-            data.loc[i,"short_end"] = 1
+            data.loc[i, "short_end"] = 1
+
+    # 找连续的多
+    long_start_points_ori = np.where(np.diff(data["long_start"]) == 1)[0] + 1
+    long_end_points_ori = np.where(np.diff(data["long_start"]) == -1)[0]
+    long_end_points_ori = long_end_points_ori[
+        long_end_points_ori >= long_start_points_ori[0]
+    ]
+    long_start_points_ori = long_start_points_ori[
+        long_start_points_ori <= long_end_points_ori[-1]
+    ]
+
+    # 过滤起点的R6高或者低的点
+    long_mask = np.array(data.loc[long_start_points_ori, "R6"] < 50)
+    long_start_points = np.array(
+        [
+            long_start_points_ori[i]
+            for i in range(len(long_mask))
+            if long_mask[i] == True
+        ]
+    )
+    long_end_points = np.array(
+        [long_end_points_ori[i] for i in range(len(long_mask)) if long_mask[i] == True]
+    )
+    long_start_points += 1
+    long_end_points += 2
+    long_profits = (
+        np.array(data.loc[long_end_points, "open"])
+        / np.array(data.loc[long_start_points, "open"])
+        - 1
+    )
+
+    # 找连续的空
+    short_start_points = np.where(np.diff(data["short_start"]) == 1)[0] + 1
+    short_end_points = np.where(np.diff(data["short_start"]) == -1)[0]
+    short_end_points = short_end_points[short_end_points >= short_start_points[0]]
+    short_start_points = short_start_points[short_start_points <= short_end_points[-1]]
+    short_start_points += 1
+    short_end_points += 2
+    short_profits = 1 - np.array(data.loc[short_end_points, "open"]) / np.array(
+        data.loc[short_start_points, "open"]
+    )
+
+    (
+        data.loc[long_start_points, "long_in"],
+        data.loc[long_end_points, "long_out"],
+        data.loc[short_start_points, "short_in"],
+        data.loc[short_end_points, "short_out"],
+    ) = (1, 1, 1, 1)
+    (
+        data.loc[long_end_points, "profit_rate"],
+        data.loc[short_end_points, "profit_rate"],
+    ) = (long_profits, short_profits)
+
+    print(long_profits.sum() + short_profits.sum())
+    return data
+
+
+def calc_point_duanxian_2(data):
+    data["duan_pos"], data["duan_neg"] = 0, 0
+    data.loc[data["duanxian"] > 0, "duan_pos"] = 1
+    data.loc[data["duanxian"] < 0, "duan_neg"] = 1
+
+    # 就近修改，如果周围前两格之内有0，则改为0
+    duan_pos = data['duan_pos']
+    duan_neg = data['duan_neg']
+    has_0_nearby =np.logical_or(np.array(duan_pos.shift(1))==0, np.array(duan_pos.shift(2))==0,np.array(duan_pos.shift(2))==0)
+    data.loc[has_0_nearby,'duan_pos'] = 0
+    has_0_nearby =np.logical_or(np.array(duan_neg.shift(1))==0, np.array(duan_neg.shift(2))==0,np.array(duan_neg.shift(2))==0)
+    data.loc[has_0_nearby,'duan_neg'] = 0
+
+    long_start_points = np.where(np.diff(data["duan_pos"]) == 1)[0] + 1
+    long_end_points = np.where(np.diff(data["duan_pos"]) == -1)[0] + 1
+    short_start_points = np.where(np.diff(data["duan_neg"]) == 1)[0] + 1
+    short_end_points = np.where(np.diff(data["duan_neg"]) == -1)[0] + 1
+
+    # 提出start和end对不齐的点
+    long_end_points = long_end_points[long_end_points >= long_start_points[0]]
+    long_start_points = long_start_points[long_start_points <= long_end_points[-1]]
+    short_end_points = short_end_points[short_end_points >= short_start_points[0]]
+    short_start_points = short_start_points[short_start_points <= short_end_points[-1]]
+
+    # 过滤起点R6
+    long_mask = np.array(data.loc[long_start_points, "R6"] < 50)
+    long_start_points = np.array(
+        [long_start_points[i] for i in range(len(long_mask)) if long_mask[i] == True]
+    )
+    long_end_points = np.array(
+        [long_end_points[i] for i in range(len(long_mask)) if long_mask[i] == True]
+    )
+
+    short_mask = np.array(data.loc[short_start_points, "R6"] > 50)
+    short_start_points = np.array(
+        [short_start_points[i] for i in range(len(short_mask)) if short_mask[i] == True]
+    )
+    short_end_points = np.array(
+        [short_end_points[i] for i in range(len(short_mask)) if short_mask[i] == True]
+    )
+
+    long_start_points += 1
+    long_end_points += 1
+    short_start_points += 1
+    short_end_points += 1
+
+    (
+        data.loc[long_start_points, "long_start_points"],
+        data.loc[long_end_points, "long_end_points"],
+        data.loc[short_start_points, "short_start_points"],
+        data.loc[short_end_points, "short_end_points"],
+    ) = (1, 1, 1, 1)
+
+    long_profits = (
+        np.array(data.loc[long_end_points, "open"])
+        / np.array(data.loc[long_start_points, "open"])
+        - 1
+    )
+    short_profits = 1 - np.array(data.loc[short_end_points, "open"]) / np.array(
+        data.loc[short_start_points, "open"]
+    )
+    (
+        data.loc[long_end_points, "profit_rate"],
+        data.loc[short_end_points, "profit_rate"],
+    ) = (long_profits, short_profits)
+    print(long_profits.sum() + short_profits.sum())
+
     return data
 
 
@@ -232,6 +362,7 @@ def double_macd(data):
     data["m1"] = m1[0]
     data["m2"] = m2[0]
     return data
+
 
 def jw(data):
     N1 = 45
@@ -389,6 +520,7 @@ def draw_line(data, code=""):
     # fig.write_image("./data_huice_dm/"+code+"_fig.png")
     fig.show()
 
+
 def draw_line_jw_duanxian(data):
     kline_1D = go.Candlestick(
         x=data["dt_1D"],
@@ -400,7 +532,7 @@ def draw_line_jw_duanxian(data):
 
 
 if __name__ == "__main__":
-    code = "PDD"
+    code = "TQQQ"
     data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="1D")
     data = double_macd(data)
     data = jw(data)
@@ -409,7 +541,7 @@ if __name__ == "__main__":
     # data = calc_buy_sell_point(data)
     # data = huice(data)
     # 短线36+jw
-    data = calc_point_duanxian_jw(data)
+    data = calc_point_duanxian_2(data)
     data.to_csv("./data_huice_dm/" + code + ".csv")
     # draw_line(data, code)
     # print(data["profit_rate"].sum())
