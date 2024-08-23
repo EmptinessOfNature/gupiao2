@@ -37,18 +37,33 @@ def tdx_raw2_kline(r_path, period):
 
     df = df[["dt_us", "open", "close", "high", "low", "vol", "turnover"]]
     df.columns = ["dt", "open", "close", "high", "low", "vol", "turnover"]
-    df["dt_1D"] = df.dt.dt.strftime("%Y%m%d")
+    if period=='1D':
+        df["dt_period"] = df.dt.dt.strftime("%Y%m%d")
+        ret = df.groupby("dt_period").agg(
+            # dt_period=("dt_period", "first"),
+            open=("open", "first"),
+            close=("close", "last"),
+            high=("high", "max"),
+            low=("low", "min"),
+            vol=("vol", "sum"),
+            turnover=("turnover", "sum"),
+        )
+        ret = ret.reset_index()
+    if 'min' in period:
+        p = int(period.split('min')[0])
+        df['time_group_ind'] = df.index // p
+        df['dt_period'] = df.dt.dt.strftime("%Y%m%d%H")
+        ret = df.groupby("time_group_ind").agg(
+            dt_period=("dt_period", "first"),
+            open=("open", "first"),
+            close=("close", "last"),
+            high=("high", "max"),
+            low=("low", "min"),
+            vol=("vol", "sum"),
+            turnover=("turnover", "sum"),
+        )
+        ret = ret.reset_index(drop=True)
 
-    ret = df.groupby("dt_1D").agg(
-        # dt_1D=("dt_1D", "first"),
-        open=("open", "first"),
-        close=("close", "last"),
-        high=("high", "max"),
-        low=("low", "min"),
-        vol=("vol", "sum"),
-        turnover=("turnover", "sum"),
-    )
-    ret = ret.reset_index()
     return ret
 
 
@@ -183,7 +198,7 @@ def calc_buy_sell_point(data, stg_ver="1"):
                 and abs(data.loc[i, "m1"]) > 1
                 and is_chuan(data, i, "m2", 1, 1, "up", 0)
                 and speed_abs(data, i, "m2", 2) > 0.1
-                and speed(data,i,'m1',3)>0
+                # and speed(data,i,'m1',3)>0
             )
             long_rules.append(
                 data.loc[i, "m1"] > 0
@@ -191,7 +206,7 @@ def calc_buy_sell_point(data, stg_ver="1"):
                 and data.loc[i, "m2"] < 0
                 and is_v(data, i, "m2", 3, 3, "bottom")
                 and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
-                and speed(data, i, 'm1', 3) > 0
+                # and speed(data, i, 'm1', 3) > 0
             )
             # 做多止盈止损条件
 
@@ -206,7 +221,7 @@ def calc_buy_sell_point(data, stg_ver="1"):
                 and abs(data.loc[i, "m1"]) > 1
                 and is_chuan(data, i, "m2", 1, 1, "down", 0)
                 and speed_abs(data, i, "m2", 2) > 0.1
-                and speed(data, i, 'm1', 3) < -0
+                # and speed(data, i, 'm1', 3) < -0
             )
             short_rules.append(
                 data.loc[i, "m1"] < 0
@@ -214,7 +229,7 @@ def calc_buy_sell_point(data, stg_ver="1"):
                 and data.loc[i, "m2"] > 0
                 and is_v(data, i, "m2", 3, 3, "top")
                 and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
-                and speed(data, i, 'm1', 3) < -0
+                # and speed(data, i, 'm1', 3) < -0
             )
             # 做空止盈止损条件
 
@@ -507,21 +522,21 @@ def draw_line(data, code=""):
     # long_profit_rates = data[data.long_out>0].reset_index(drop=True)
 
     kline_1D = go.Candlestick(
-        x=data["dt_1D"],
+        x=data["dt_period"],
         open=data["open"],
         high=data["high"],
         low=data["low"],
         close=data["close"],
     )
     trace_long = go.Scatter(
-        x=long_in_signals["dt_1D"],
+        x=long_in_signals["dt_period"],
         y=long_in_signals["close"] * 0.9,
         mode="markers",
         marker=dict(symbol="triangle-up", size=10),
         name="做多",
     )
     trace_short = go.Scatter(
-        x=short_in_signals["dt_1D"],
+        x=short_in_signals["dt_period"],
         y=short_in_signals["close"] * 1.2,
         mode="markers",
         marker=dict(symbol="triangle-down", size=10),
@@ -529,7 +544,7 @@ def draw_line(data, code=""):
     )
 
     trace_long_stop = go.Scatter(
-        x=long_out_signals["dt_1D"],
+        x=long_out_signals["dt_period"],
         y=long_out_signals["close"] * 0.9,
         # text=long_out_signals['profit_rate'],
         text=[
@@ -542,7 +557,7 @@ def draw_line(data, code=""):
         name="多单结束",
     )
     trace_short_stop = go.Scatter(
-        x=short_out_signals["dt_1D"],
+        x=short_out_signals["dt_period"],
         y=short_out_signals["close"] * 1.2,
         # text = short_out_signals['profit_rate'],
         text=[
@@ -571,18 +586,18 @@ def draw_line(data, code=""):
     fig.add_trace(trace_short, row=1, col=1)
     fig.add_trace(trace_long_stop, row=1, col=1)
     fig.add_trace(trace_short_stop, row=1, col=1)
-    fig.add_trace(go.Scatter(x=data["dt_1D"], y=data["m1"]), row=2, col=1)
-    fig.add_trace(go.Scatter(x=data["dt_1D"], y=data["m2"]), row=2, col=1)
+    fig.add_trace(go.Scatter(x=data["dt_period"], y=data["m1"]), row=2, col=1)
+    fig.add_trace(go.Scatter(x=data["dt_period"], y=data["m2"]), row=2, col=1)
     fig.add_trace(
         go.Scatter(
-            x=long_in_signals["dt_1D"], y=[0] * len(long_in_signals), mode="markers"
+            x=long_in_signals["dt_period"], y=[0] * len(long_in_signals), mode="markers"
         ),
         row=2,
         col=1,
     )
     fig.add_trace(
         go.Scatter(
-            x=short_in_signals["dt_1D"], y=[0] * len(short_in_signals), mode="markers"
+            x=short_in_signals["dt_period"], y=[0] * len(short_in_signals), mode="markers"
         ),
         row=2,
         col=1,
@@ -597,7 +612,7 @@ def draw_line(data, code=""):
 
 def draw_line_jw_duanxian(data):
     kline_1D = go.Candlestick(
-        x=data["dt_1D"],
+        x=data["dt_period"],
         open=data["open"],
         high=data["high"],
         low=data["low"],
@@ -606,9 +621,10 @@ def draw_line_jw_duanxian(data):
 
 
 if __name__ == "__main__":
-    code = "TSLA"
+    code = "TQQQ"
     stg_ver = '2'
-    data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="1D")
+    # 390min是一天，多天的就按分钟计算好了
+    data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="780min")
     data = double_macd(data)
     data = jw(data)
     data = duanxian(data)
