@@ -184,6 +184,7 @@ def calc_buy_sell_point(data, stg_ver="1"):
                 and abs(data.loc[i, "m1"]) > 1
                 and data.loc[i, "m2"] > 0
                 and is_v(data, i, "m2", 3, 3, "top")
+                and abs(data.loc[i, 'm2']) > 0.5
                 and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
             )
             # 做空止盈止损条件
@@ -205,6 +206,7 @@ def calc_buy_sell_point(data, stg_ver="1"):
                 and abs(data.loc[i, "m1"]) > 1
                 and data.loc[i, "m2"] < 0
                 and is_v(data, i, "m2", 3, 3, "bottom")
+                and abs(data.loc[i, 'm2']) > 0.5
                 and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
                 # and speed(data, i, 'm1', 3) > 0
             )
@@ -514,7 +516,7 @@ def huice(data):
     return data
 
 
-def draw_line(data, code=""):
+def draw_line(data, code="",comment=""):
     long_in_signals = data[data.long_in > 0].reset_index(drop=True)
     short_in_signals = data[data.short_in > 0].reset_index(drop=True)
     long_out_signals = data[data.long_out > 0].reset_index(drop=True)
@@ -604,9 +606,9 @@ def draw_line(data, code=""):
     )
 
     fig.update_layout(xaxis_rangeslider_visible=False)
-    fig.update_layout(title_text=code)
+    fig.update_layout(title_text=code+comment)
     print(len(long_in_signals), len(short_in_signals))
-    fig.write_image("./data_huice_dm/" + code + "_fig.png")
+    fig.write_image("./data_huice_dm/" + code + "_fig.jpg",width=2000,height=1000)
     # fig.show()
 
 
@@ -621,19 +623,21 @@ def draw_line_jw_duanxian(data):
 
 
 if __name__ == "__main__":
-    code = "TQQQ"
-    stg_ver = '2'
-    # 390min是一天，多天的就按分钟计算好了
-    data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="780min")
-    data = double_macd(data)
-    data = jw(data)
-    data = duanxian(data)
-    # 双macd
-    data = calc_buy_sell_point(data,stg_ver)
-    data = huice(data)
-    # 短线36+jw
-    # data = calc_point_duanxian_2(data)
-    # 保存数据，画线
-    data.to_csv("./data_huice_dm/" + code + ".csv")
-    draw_line(data, code)
-    print(data["profit_rate"].sum())
+    codes = ['TQQQ','TSLA','MSFT','AAPL','AMD','BABA','GOOGL','NVDA','PDD']
+    for code in codes:
+        # code = "TSLA"
+        stg_ver = '2'
+        # 390min是一天，多天的就按分钟计算好了
+        data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="390min")
+        data = double_macd(data)
+        data = jw(data)
+        data = duanxian(data)
+        # 双macd
+        data = calc_buy_sell_point(data,stg_ver)
+        data = huice(data)
+        # 短线36+jw
+        # data = calc_point_duanxian_2(data)
+        # 保存数据，画线
+        data.to_csv("./data_huice_dm/" + code + ".csv")
+        draw_line(data, code,':收益率'+str("{:.1f}%".format(float(data["profit_rate"].sum())*100)))
+        print(code,data["profit_rate"].sum())
