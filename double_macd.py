@@ -81,7 +81,7 @@ def is_neg(data, i, col, length):
     return (data.loc[i - length + 1 : i, col] < 0).all()
 
 
-def calc_buy_sell_point(data):
+def calc_buy_sell_point(data, stg_ver="1"):
     # 判断是否是v形
     def is_v(data, i, col, pre_length, post_length, direction):
         if i < pre_length + post_length:
@@ -132,45 +132,95 @@ def calc_buy_sell_point(data):
     for i in range(len(data)):
         # 做多开单条件，多个append的条件是或的关系，下同
         long_rules = []
-        long_rules.append(
-            data.loc[i, "m1"] > 0
-            and abs(data.loc[i, "m1"]) > 1
-            and is_chuan(data, i, "m2", 1, 1, "up", 0)
-            and speed_abs(data, i, "m2", 2) > 0.1
-        )
-        long_rules.append(
-            data.loc[i, "m1"] > 0
-            and abs(data.loc[i, "m1"]) > 1
-            and data.loc[i, "m2"] < 0
-            and is_v(data, i, "m2", 3, 3, "bottom")
-            and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
-        )
-        # 做多止盈止损条件
         long_stop_rules = []
-        long_stop_rules.append(is_chuan(data, i, "m2", 1, 1, "down", 0))
-        long_stop_rules.append(is_v(data, i, "m2", 3, 3, "top"))
-        long_stop_rules.append(speed_abs(data, i, "m2", 2) < 0.01)
-
-        # 做空开单条件
         short_rules = []
-        short_rules.append(
-            data.loc[i, "m1"] < 0
-            and abs(data.loc[i, "m1"]) > 1
-            and is_chuan(data, i, "m2", 1, 1, "down", 0)
-            and speed_abs(data, i, "m2", 2) > 0.1
-        )
-        short_rules.append(
-            data.loc[i, "m1"] < 0
-            and abs(data.loc[i, "m1"]) > 1
-            and data.loc[i, "m2"] > 0
-            and is_v(data, i, "m2", 3, 3, "top")
-            and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
-        )
-        # 做空止盈止损条件
         short_stop_rules = []
-        short_stop_rules.append(is_chuan(data, i, "m2", 1, 1, "up", 0))
-        short_stop_rules.append(is_v(data, i, "m2", 3, 3, "bottom"))
-        short_stop_rules.append(speed_abs(data, i, "m2", 2) < 0.01)
+        # 策略版本1，TQQQ收益率60%，MSFT收益率32%
+        if stg_ver == "1":
+            long_rules.append(
+                data.loc[i, "m1"] > 0
+                and abs(data.loc[i, "m1"]) > 1
+                and is_chuan(data, i, "m2", 1, 1, "up", 0)
+                and speed_abs(data, i, "m2", 2) > 0.1
+            )
+            long_rules.append(
+                data.loc[i, "m1"] > 0
+                and abs(data.loc[i, "m1"]) > 1
+                and data.loc[i, "m2"] < 0
+                and is_v(data, i, "m2", 3, 3, "bottom")
+                and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
+            )
+            # 做多止盈止损条件
+
+            long_stop_rules.append(is_chuan(data, i, "m2", 1, 1, "down", 0))
+            long_stop_rules.append(is_v(data, i, "m2", 3, 3, "top"))
+            long_stop_rules.append(speed_abs(data, i, "m2", 2) < 0.01)
+
+            # 做空开单条件
+
+            short_rules.append(
+                data.loc[i, "m1"] < 0
+                and abs(data.loc[i, "m1"]) > 1
+                and is_chuan(data, i, "m2", 1, 1, "down", 0)
+                and speed_abs(data, i, "m2", 2) > 0.1
+            )
+            short_rules.append(
+                data.loc[i, "m1"] < 0
+                and abs(data.loc[i, "m1"]) > 1
+                and data.loc[i, "m2"] > 0
+                and is_v(data, i, "m2", 3, 3, "top")
+                and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
+            )
+            # 做空止盈止损条件
+
+            short_stop_rules.append(is_chuan(data, i, "m2", 1, 1, "up", 0))
+            short_stop_rules.append(is_v(data, i, "m2", 3, 3, "bottom"))
+            short_stop_rules.append(speed_abs(data, i, "m2", 2) < 0.01)
+        # 策略版本2，增加开仓时候m1方向的判断
+        if stg_ver == "2":
+            long_rules.append(
+                data.loc[i, "m1"] > 0
+                and abs(data.loc[i, "m1"]) > 1
+                and is_chuan(data, i, "m2", 1, 1, "up", 0)
+                and speed_abs(data, i, "m2", 2) > 0.1
+                and speed(data,i,'m1',3)>0
+            )
+            long_rules.append(
+                data.loc[i, "m1"] > 0
+                and abs(data.loc[i, "m1"]) > 1
+                and data.loc[i, "m2"] < 0
+                and is_v(data, i, "m2", 3, 3, "bottom")
+                and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
+                and speed(data, i, 'm1', 3) > 0
+            )
+            # 做多止盈止损条件
+
+            long_stop_rules.append(is_chuan(data, i, "m2", 1, 1, "down", 0))
+            long_stop_rules.append(is_v(data, i, "m2", 3, 3, "top"))
+            long_stop_rules.append(speed_abs(data, i, "m2", 2) < 0.01)
+
+            # 做空开单条件
+
+            short_rules.append(
+                data.loc[i, "m1"] < 0
+                and abs(data.loc[i, "m1"]) > 1
+                and is_chuan(data, i, "m2", 1, 1, "down", 0)
+                and speed_abs(data, i, "m2", 2) > 0.1
+                and speed(data, i, 'm1', 3) < -0
+            )
+            short_rules.append(
+                data.loc[i, "m1"] < 0
+                and abs(data.loc[i, "m1"]) > 1
+                and data.loc[i, "m2"] > 0
+                and is_v(data, i, "m2", 3, 3, "top")
+                and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
+                and speed(data, i, 'm1', 3) < -0
+            )
+            # 做空止盈止损条件
+
+            short_stop_rules.append(is_chuan(data, i, "m2", 1, 1, "up", 0))
+            short_stop_rules.append(is_v(data, i, "m2", 3, 3, "bottom"))
+            short_stop_rules.append(speed_abs(data, i, "m2", 2) < 0.01)
 
         if i <= 2:
             continue
@@ -190,7 +240,7 @@ def calc_buy_sell_point(data):
     return data
 
 
-def calc_point_duanxian_jw(data):
+def calc_point_duanxian_jw(data, stg_ver="1"):
     data["long_start"], data["long_end"], data["short_start"], data["short_end"] = (
         0,
         0,
@@ -205,20 +255,36 @@ def calc_point_duanxian_jw(data):
             [],
         )
         # 买卖点规则
-        long_start_rules.append(
-            # is_pos(data, i, "duanxian", 1) and speed(data, i, "jw", 3) > 0 and data.loc[i,'duanxian']>1
-            # is_pos(data, i, "duanxian", 3) and is_pos(data, i, "m1", 1) and  data.loc[i,'duanxian']>1
-            data.loc[i, "duanxian"]
-            > 0
-        )
-        long_end_rules.append(is_neg(data, i, "duanxian", 2))
-        short_start_rules.append(
-            # is_neg(data, i, "duanxian", 1) and speed(data, i, "jw", 3) < 0 and data.loc[i,'duanxian']<-1
-            # is_neg(data, i, "duanxian", 3) and is_neg(data, i, "m1", 1)  and data.loc[i,'duanxian']<-1
-            data.loc[i, "duanxian"]
-            < 0
-        )
-        short_end_rules.append(is_pos(data, i, "duanxian", 2))
+        if stg_ver == "1":
+            long_start_rules.append(
+                # is_pos(data, i, "duanxian", 1) and speed(data, i, "jw", 3) > 0 and data.loc[i,'duanxian']>1
+                # is_pos(data, i, "duanxian", 3) and is_pos(data, i, "m1", 1) and  data.loc[i,'duanxian']>1
+                data.loc[i, "duanxian"]
+                > 0
+            )
+            long_end_rules.append(is_neg(data, i, "duanxian", 2))
+            short_start_rules.append(
+                # is_neg(data, i, "duanxian", 1) and speed(data, i, "jw", 3) < 0 and data.loc[i,'duanxian']<-1
+                # is_neg(data, i, "duanxian", 3) and is_neg(data, i, "m1", 1)  and data.loc[i,'duanxian']<-1
+                data.loc[i, "duanxian"]
+                < 0
+            )
+            short_end_rules.append(is_pos(data, i, "duanxian", 2))
+        if stg_ver == "2":
+            long_start_rules.append(
+                # is_pos(data, i, "duanxian", 1) and speed(data, i, "jw", 3) > 0 and data.loc[i,'duanxian']>1
+                # is_pos(data, i, "duanxian", 3) and is_pos(data, i, "m1", 1) and  data.loc[i,'duanxian']>1
+                data.loc[i, "duanxian"]
+                > 0
+            )
+            long_end_rules.append(is_neg(data, i, "duanxian", 2))
+            short_start_rules.append(
+                # is_neg(data, i, "duanxian", 1) and speed(data, i, "jw", 3) < 0 and data.loc[i,'duanxian']<-1
+                # is_neg(data, i, "duanxian", 3) and is_neg(data, i, "m1", 1)  and data.loc[i,'duanxian']<-1
+                data.loc[i, "duanxian"]
+                < 0
+            )
+            short_end_rules.append(is_pos(data, i, "duanxian", 2))
         if i < 2:
             continue
         if sum(long_start_rules) > 0:
@@ -292,12 +358,20 @@ def calc_point_duanxian_2(data):
     data.loc[data["duanxian"] < 0, "duan_neg"] = 1
 
     # 就近修改，如果周围前两格之内有0，则改为0
-    duan_pos = data['duan_pos']
-    duan_neg = data['duan_neg']
-    has_0_nearby =np.logical_or(np.array(duan_pos.shift(1))==0, np.array(duan_pos.shift(2))==0,np.array(duan_pos.shift(2))==0)
-    data.loc[has_0_nearby,'duan_pos'] = 0
-    has_0_nearby =np.logical_or(np.array(duan_neg.shift(1))==0, np.array(duan_neg.shift(2))==0,np.array(duan_neg.shift(2))==0)
-    data.loc[has_0_nearby,'duan_neg'] = 0
+    duan_pos = data["duan_pos"]
+    duan_neg = data["duan_neg"]
+    has_0_nearby = np.logical_or(
+        np.array(duan_pos.shift(1)) == 0,
+        np.array(duan_pos.shift(2)) == 0,
+        np.array(duan_pos.shift(2)) == 0,
+    )
+    data.loc[has_0_nearby, "duan_pos"] = 0
+    has_0_nearby = np.logical_or(
+        np.array(duan_neg.shift(1)) == 0,
+        np.array(duan_neg.shift(2)) == 0,
+        np.array(duan_neg.shift(2)) == 0,
+    )
+    data.loc[has_0_nearby, "duan_neg"] = 0
 
     long_start_points = np.where(np.diff(data["duan_pos"]) == 1)[0] + 1
     long_end_points = np.where(np.diff(data["duan_pos"]) == -1)[0] + 1
@@ -517,8 +591,8 @@ def draw_line(data, code=""):
     fig.update_layout(xaxis_rangeslider_visible=False)
     fig.update_layout(title_text=code)
     print(len(long_in_signals), len(short_in_signals))
-    # fig.write_image("./data_huice_dm/"+code+"_fig.png")
-    fig.show()
+    fig.write_image("./data_huice_dm/" + code + "_fig.png")
+    # fig.show()
 
 
 def draw_line_jw_duanxian(data):
@@ -532,16 +606,18 @@ def draw_line_jw_duanxian(data):
 
 
 if __name__ == "__main__":
-    code = "TQQQ"
+    code = "TSLA"
+    stg_ver = '2'
     data = tdx_raw2_kline("./data_tdx_raw/74#" + code + ".txt", period="1D")
     data = double_macd(data)
     data = jw(data)
     data = duanxian(data)
     # 双macd
-    # data = calc_buy_sell_point(data)
-    # data = huice(data)
+    data = calc_buy_sell_point(data,stg_ver)
+    data = huice(data)
     # 短线36+jw
-    data = calc_point_duanxian_2(data)
+    # data = calc_point_duanxian_2(data)
+    # 保存数据，画线
     data.to_csv("./data_huice_dm/" + code + ".csv")
-    # draw_line(data, code)
-    # print(data["profit_rate"].sum())
+    draw_line(data, code)
+    print(data["profit_rate"].sum())
