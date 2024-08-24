@@ -6,6 +6,28 @@ from longport.openapi import QuoteContext, Config, SubType, PushQuote, Period, A
 # def on_quote(symbol: str, quote: PushQuote):
 #     print(symbol, quote)
 
+# def get_jw_1D_longport(cod,date):
+#     def get_date(date):
+#         y = int(date[0:4])
+#         m = int(date[4:6])
+#         d = int(date[6:8])
+#         for i in range(len(resp)):
+#             if resp[i].timestamp.replace(hour=12)==datetime.datetime(y, m, d, 12, 0):
+#                 return i
+#     def get_jw(data):
+#         N1 = 45
+#         M1 = 15
+#         M2 = 15
+#         CLOSE = np.array(data["close"])
+#         HIGH = np.array(data["high"])
+#         LOW = np.array(data["low"])
+#         RSV = (CLOSE - LLV(LOW, N1)) / (HHV(HIGH, N1) - LLV(LOW, N1)) * 100
+#         K = SMA(RSV, M1, 1)
+#         D = SMA(K, M2, 1)
+#         JW = 3 * K - 2 * D
+#         return JW[-2:]
+#
+
 def get_atr_longport(code,date):
     def get_date(date):
         y = int(date[0:4])
@@ -54,8 +76,45 @@ class Longport_agent():
             code, Period.Day, 800, AdjustType.NoAdjust)
         return resp
 
+    def get_date(self,date,resp):
+        y = int(date[0:4])
+        m = int(date[4:6])
+        d = int(date[6:8])
+        for i in range(len(resp)):
+            if resp[i].timestamp.replace(hour=12)==datetime.datetime(y, m, d, 12, 0):
+                return i
+    def get_atr_longport(self,code,date):
+        pass
+
+    def get_jw_longport(self,code,date):
+        def get_jw(CLOSE,LOW,HIGH):
+            N1 = 45
+            M1 = 15
+            M2 = 15
+            CLOSE = np.array(CLOSE)
+            HIGH = np.array(HIGH)
+            LOW = np.array(LOW)
+            RSV = (CLOSE - LLV(LOW, N1)) / (HHV(HIGH, N1) - LLV(LOW, N1)) * 100
+            K = SMA(RSV, M1, 1)
+            D = SMA(K, M2, 1)
+            JW = 3 * K - 2 * D
+            return JW[-2:]
+        resp = self.get_data_1D(code)
+        i = self.get_date(date,resp)
+        C = []
+        L = []
+        H = []
+        for j in range(i-46,i):
+            C.append(float(resp[j].close))
+            L.append(float(resp[j].low))
+            H.append(float(resp[j].high))
+        ret = get_jw(C,L,H)
+        return ret
+
+
 if __name__=='__main__':
     # print(get_atr_longport('NVDA','20240417'))
     agent = Longport_agent()
     resp = agent.get_data_1D('TQQQ')
+    jw = agent.get_jw_longport('TQQQ','20240417')
     print(1)

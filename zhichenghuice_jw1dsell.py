@@ -3,9 +3,12 @@ import os
 import numpy as np
 import multiprocessing
 from MyTT import *
+
+import longport_utils
 from longport_utils import get_atr_longport
 from datetime import datetime
 
+# 增加最后30分钟jw拐头卖出逻辑
 
 def huice_1d(data, first_cash, n_atr):
     icon_buy = (
@@ -210,10 +213,12 @@ def huice_nd(code, n_atr, stg_ver):
         "max_1d_profit": 0,
         "max_1d_lost": 0,
     }
+    agent = longport_utils.Longport_agent()
     for i in range(len(csvs)):
         date = csvs[i].split("/")[-1].split(".")[0]
         data = pd.read_csv(csvs[i], index_col=0)
         # atr = get_atr_longport(code, date)
+        jw = agent.get_jw_longport(code,date)
         atr = 1
         if i == 0:
             # data_done, cash = huice_1d(data, 100000, round(atr / n_atr, 2))
