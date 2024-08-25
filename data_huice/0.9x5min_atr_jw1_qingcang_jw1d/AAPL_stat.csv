@@ -1,0 +1,17 @@
+,0
+code,AAPL
+trade_days,9
+win_days,5
+win_sells,5
+lose_sells,5
+max_1d_profit,143.3349999999967
+max_1d_lost,-99.3269999999996
+start_day,20240102
+end_day,20240801
+start_cash,100000
+end_cash,100111.79299999998
+total_profit_rate,0.0011179299999997117
+buy_nums,10
+sell_nums,10
+avg_win_sell_profit,89.10399999999822
+avg_lose_sell_profit,-66.74540000000117

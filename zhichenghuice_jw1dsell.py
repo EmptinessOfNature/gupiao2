@@ -219,13 +219,16 @@ def huice_nd(code, n_atr, stg_ver):
         data = pd.read_csv(csvs[i], index_col=0)
         # atr = get_atr_longport(code, date)
         jw = agent.get_jw_longport(code,date)
+        # 过滤1D级别jw趋势向下，且高于某阈值时，不做多。
+        if jw[-1]>80 and jw[-2]>jw[-1]:
+            data["icon_1"],data["icon_38"],data["icon_34"],data["icon_13"],data["icon_11"]=0,0,0,0,0
         atr = 1
+
         if i == 0:
             # data_done, cash = huice_1d(data, 100000, round(atr / n_atr, 2))
             cash = 100000
             data_ops = ""
 
-        # else:
         data_done, cash = huice_1d(data, cash, n_atr)
         if (data_done.buy_signal.sum() > 0).any():
             data_op = data[
@@ -330,8 +333,8 @@ if __name__ == "__main__":
     args = []
     stg_names = []
 
-    for x_atr in np.arange(0.1, 2.1, 0.1):
-        stg_name = str(round(float(x_atr), 2)) + "x5min_atr_jw1_qingcang"
+    for x_atr in np.arange(0.7, 1.0, 0.1):
+        stg_name = str(round(float(x_atr), 2)) + "x5min_atr_jw1_qingcang_jw1d"
         if stg_name not in stg_names:
             stg_names.append(stg_name)
         for gp in gps:

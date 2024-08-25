@@ -1,0 +1,17 @@
+,0
+code,GOOGL
+trade_days,9
+win_days,5
+win_sells,6
+lose_sells,7
+max_1d_profit,209.8289999999948
+max_1d_lost,-102.83600000000234
+start_day,20240102
+end_day,20240801
+start_cash,100000
+end_cash,100075.18299999996
+total_profit_rate,0.0007518299999995648
+buy_nums,13
+sell_nums,13
+avg_win_sell_profit,70.45749999999938
+avg_lose_sell_profit,-49.65171428571667
