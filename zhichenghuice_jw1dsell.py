@@ -333,7 +333,7 @@ if __name__ == "__main__":
     args = []
     stg_names = []
 
-    for x_atr in np.arange(0.7, 1.0, 0.1):
+    for x_atr in np.arange(0.4, 0.5, 0.1):
         stg_name = str(round(float(x_atr), 2)) + "x5min_atr_jw1_qingcang_jw1d"
         if stg_name not in stg_names:
             stg_names.append(stg_name)
