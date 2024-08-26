@@ -220,7 +220,7 @@ def huice_nd(code, n_atr, stg_ver):
         # atr = get_atr_longport(code, date)
         jw = agent.get_jw_longport(code,date)
         # 过滤1D级别jw趋势向下，且高于某阈值时，不做多。
-        if jw[-1]>80 and jw[-2]>jw[-1]:
+        if jw[-1]>90 and jw[-2]>jw[-1]:
             data["icon_1"],data["icon_38"],data["icon_34"],data["icon_13"],data["icon_11"]=0,0,0,0,0
         atr = 1
 
@@ -334,7 +334,7 @@ if __name__ == "__main__":
     stg_names = []
 
     for x_atr in np.arange(0.4, 0.5, 0.1):
-        stg_name = str(round(float(x_atr), 2)) + "x5min_atr_jw1_qingcang_jw1d"
+        stg_name = str(round(float(x_atr), 2)) + "x5min_atr_jw1_qingcang_jw1d90"
         if stg_name not in stg_names:
             stg_names.append(stg_name)
         for gp in gps:
