@@ -166,7 +166,11 @@ def draw_line_jw_duanxian(data):
     fig.add_trace(kline_1D, row=1, col=1)
     fig.add_trace(go.Scatter(x=data["dt_period"], y=data["m1"]), row=2, col=1)
     fig.add_trace(go.Scatter(x=data["dt_period"], y=data["m2"]), row=2, col=1)
-    fig.add_trace(go.Scatter(x=data["dt_period"], y=data['R6']), row=3, col=1)
+    # fig.add_trace(go.Scatter(x=data["dt_period"], y=data['R6'],marker=dict(color=np.where(data['duanxian'] > 0, 'red', 'green'))), row=3, col=1)
+    fig.add_trace(go.Scatter(x=data[data.duanxian>=0]["dt_period"], y=data[data.duanxian>=0]['R6'],mode="markers",marker=dict(symbol = 'square',color='red',size=3)), row=3, col=1)
+    fig.add_trace(go.Scatter(x=data[data.duanxian<0]["dt_period"], y=data[data.duanxian<0]['R6'],mode="markers",marker=dict(symbol = 'square',color='green',size=3)), row=3, col=1)
+
+
     fig.add_trace(go.Scatter(x=data["dt_period"], y=data['jw']), row=4, col=1)
     fig.add_trace(
         go.Scatter(
@@ -184,7 +188,8 @@ def draw_line_jw_duanxian(data):
     )
 
     fig.update_layout(xaxis_rangeslider_visible=False)
-    fig.write_image("./data_huice_dm/"  + "macd_jw_duan_debug_fig.jpg",width=1920,height=1080)
+    fig.show()
+    # fig.write_image("./data_huice_dm/"  + "macd_jw_duan_debug_fig.jpg",width=1920,height=1080)
     # macd_in_signals = data[data.long_in > 0].reset_index(drop=True)
 
 
