@@ -279,7 +279,8 @@ def huice(data, in_sig_col='macd_duanxian_buy_signal', out_sig_col='duanxian_sel
     data.loc[np.array(in_indexs_starts) + 1, 'huice_long_buy'] = 1
     data.loc[np.array(out_indexs) + 1, 'huice_long_sell'] = 1
     data.loc[np.array(out_indexs) + 1, 'profit_rate'] = np.array(profit_rates)
-    return data
+
+    return data, in_indexs_starts, out_indexs, profit_rates
 
 
 if __name__ == "__main__":
@@ -292,7 +293,14 @@ if __name__ == "__main__":
         data = jw(data)
         data = duanxian(data)
         data = merge_macd_duanxian(data)
-        data = huice(data,'duanxian_buy_signal','duanxian_sell_signal')
+        data, in_indexs_starts, out_indexs, profit_rates = huice(data, 'duanxian_buy_signal', 'duanxian_sell_signal')
+        # 算法训练数据
+        X = []
+        X = data.loc[31, ['m1', 'm2', 'macd_buy_signal', 'macd_sell_signal', 'jw',
+                      'jw_buy_signal', 'jw_sell_signal', 'R6', 'duanxian',
+                      'duanxian_buy_signal', 'duanxian_sell_signal', 'macd_duanxian',
+                      'macd_duanxian_buy_signal']]
+        y = data.loc[]
         draw_line_jw_duanxian(data)
         print(1)
         print(data.profit_rate.sum())
