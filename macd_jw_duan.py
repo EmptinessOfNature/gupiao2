@@ -96,6 +96,10 @@ def double_macd(data, short1=55, long1=89, m1=1, short2=13, long2=21, m2=1):
     m2 = MACD(data.close, short2, long2, m2)
     data["m1"] = m1[0]
     data["m2"] = m2[0]
+    macd_buy_sig = (m2>0) & (m1<0) & (m2<REF(m2,1))
+    macd_sell_sig = (m2<0) &(m1>0) & (m2>REF(m2,1))
+    data['macd_buy_signal'] = macd_buy_sig
+    data['macd_sell_signal'] = macd_sell_sig
     return data
 
 
@@ -136,6 +140,10 @@ def duanxian(data):
         R6 = B5 - B2
         data["R6"] = R6
         data["duanxian"] = data["R6"].diff()
+        duanxian_bug_sig = data["R6"]>0
+        duanxian_sell_sig = data["R6"]<=0
+        data["duanxian_buy_signal"] = duanxian_bug_sig
+        data["duanxian_sell_signal"] = duanxian_sell_sig
         return data
     except:
         print("短线操盘error")
@@ -188,8 +196,8 @@ def draw_line_jw_duanxian(data):
     )
 
     fig.update_layout(xaxis_rangeslider_visible=False)
-    fig.show()
-    # fig.write_image("./data_huice_dm/"  + "macd_jw_duan_debug_fig.jpg",width=1920,height=1080)
+    # fig.show()
+    fig.write_image("./data_huice_dm/"  + "macd_jw_duan_debug_fig.jpg",width=1920,height=1080)
     # macd_in_signals = data[data.long_in > 0].reset_index(drop=True)
 
 
@@ -205,5 +213,5 @@ if __name__ == "__main__":
         data = double_macd(data, 36, 78, 1, 12, 26, 1)
         data = jw(data)
         data = duanxian(data)
-        draw_line_jw_duanxian(data)
+        # draw_line_jw_duanxian(data)
         print(1)
