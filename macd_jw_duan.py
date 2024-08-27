@@ -253,7 +253,6 @@ def merge_macd_duanxian(data):
     data['macd_duanxian'] = data['macd_buy_signal'].astype(int) + data['duanxian_buy_signal'].astype(int)
     data['macd_duanxian_buy_signal'] = (data['macd_buy_signal'].astype(int) + data['duanxian_buy_signal'].astype(
         int)) >= 2
-    data['duanxian_buy_signal_2'] = data['duanxian'].astype(int)
     return data
 
 
