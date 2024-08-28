@@ -295,12 +295,12 @@ if __name__ == "__main__":
         data = merge_macd_duanxian(data)
         data, in_indexs_starts, out_indexs, profit_rates = huice(data, 'duanxian_buy_signal', 'duanxian_sell_signal')
         # 算法训练数据
-        X = []
+        # X = []
         X = data.loc[31, ['m1', 'm2', 'macd_buy_signal', 'macd_sell_signal', 'jw',
                       'jw_buy_signal', 'jw_sell_signal', 'R6', 'duanxian',
                       'duanxian_buy_signal', 'duanxian_sell_signal', 'macd_duanxian',
                       'macd_duanxian_buy_signal']]
-        y = data.loc[]
+        # y = data.loc[]
         draw_line_jw_duanxian(data)
         print(1)
         print(data.profit_rate.sum())
