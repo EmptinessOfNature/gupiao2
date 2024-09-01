@@ -1,0 +1,17 @@
+,0
+code,TSLA
+trade_days,70
+win_days,25
+win_sells,40
+lose_sells,85
+max_1d_profit,675.759999999992
+max_1d_lost,-577.8549999999955
+start_day,20240102
+end_day,20240830
+start_cash,100000
+end_cash,98170.64100000003
+total_profit_rate,-0.018293589999999638
+buy_nums,127
+sell_nums,125
+avg_win_sell_profit,169.94640000000035
+avg_lose_sell_profit,-101.49664705882347

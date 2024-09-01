@@ -1,0 +1,17 @@
+,0
+code,QQQ
+trade_days,27
+win_days,11
+win_sells,17
+lose_sells,24
+max_1d_profit,351.12000000000467
+max_1d_lost,-132.7600000000018
+start_day,20240102
+end_day,20240830
+start_cash,100000
+end_cash,100323.25800000005
+total_profit_rate,0.0032325800000003735
+buy_nums,41
+sell_nums,41
+avg_win_sell_profit,72.22711764705977
+avg_lose_sell_profit,-37.69179166666667

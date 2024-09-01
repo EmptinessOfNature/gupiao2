@@ -21,8 +21,12 @@ def huice_1d(data, first_cash, n_atr):
         )
         >= 1
     ).astype(int)
+    # icon_jw5_30_bottom = (
+    #     ((data["jw5"] < 20).astype(int) + (data["jw30"] < 20).astype(int)) >= 2
+    # ).astype(int)
+    # 取消jw30限制
     icon_jw5_30_bottom = (
-        ((data["jw5"] < 20).astype(int) + (data["jw30"] < 20).astype(int)) >= 2
+        (data["jw5"] < 20).astype(int) >= 1
     ).astype(int)
     icon_sell = (
         (
@@ -331,11 +335,13 @@ if __name__ == "__main__":
     # 多线程回测
     # gps = ["TSLA", "PDD", "NVDA", "AAPL", "AMD", "BABA", "GOOGL", "MSFT",'QQQ']
     gps = ['TSLA', 'PDD', 'NVDA', 'AAPL', 'AMD', 'BABA', 'GOOGL', 'MSFT', 'QQQ']
+    gps = [ 'AAPL', 'BABA', 'GOOGL']
+
     args = []
     stg_names = []
 
     for x_atr in np.arange(0.4, 0.5, 0.1):
-        stg_name = str(round(float(x_atr), 2)) + "x5min_atr_jw1_qingcang_jw1d80"
+        stg_name = str(round(float(x_atr), 2)) + "x5min_atr_jw1_qingcang_jw1d80_onlyjw5"
         if stg_name not in stg_names:
             stg_names.append(stg_name)
         for gp in gps:
