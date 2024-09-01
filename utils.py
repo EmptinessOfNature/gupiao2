@@ -128,14 +128,14 @@ if __name__ == "__main__":
     # 多线程
     gps=['TSLA','PDD','NVDA','AAPL','AMD','BABA','GOOGL','MSFT','QQQ']
 
-    args = []
-    for gp in gps:
-        args.append(["./data_tdx_raw/74#" + gp + ".txt", gp, "./data_server/"])
-    parse_tdx_rawdata_1d_threads(args=args)
-
     # args = []
     # for gp in gps:
-    #     args.append([gp,"./data_server/","./data_ready/"])
-    # point_calc_hist_1d_threads(args)
+    #     args.append(["./data_tdx_raw/74#" + gp + ".txt", gp, "./data_server/"])
+    # parse_tdx_rawdata_1d_threads(args=args)
+
+    args = []
+    for gp in gps:
+        args.append([gp,"./data_server/","./data_ready/"])
+    point_calc_hist_1d_threads(args)
 
 
