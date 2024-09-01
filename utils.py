@@ -39,6 +39,8 @@ def parse_tdx_rawdata_1d(r_path, code, w_path="./data_server/"):
     date_list = sorted(data["dt"].dt.date.unique())
     for i in range(max(len(date_list) - 1, 1)):  # 遍历所有输入data中的每个日期
         date_1d = str(date_list[i])
+        if date_1d[0:4]!='2024':
+            continue
         date_1d_add1 = str(date_list[i + 1])
         data.dt = data.dt.astype("str")
         data_1d = data[
@@ -116,7 +118,6 @@ def point_calc_hist_1d_threads(args):
 if __name__ == "__main__":
     # 单线程
     # gp = 'TQQQ'
-    gps=['TSLA','PDD','NVDA','AAPL','AMD','BABA','GOOGL','MSFT']
     # gps = ['TQQQ']
     # for gp in gps:
     #     parse_tdx_rawdata_1d(
@@ -125,14 +126,16 @@ if __name__ == "__main__":
         # point_calc_hist_1d(code = gp)
     # print(1)
     # 多线程
+    gps=['TSLA','PDD','NVDA','AAPL','AMD','BABA','GOOGL','MSFT','QQQ']
+
     args = []
     for gp in gps:
         args.append(["./data_tdx_raw/74#" + gp + ".txt", gp, "./data_server/"])
     parse_tdx_rawdata_1d_threads(args=args)
 
-    args = []
-    for gp in gps:
-        args.append([gp,"./data_server/","./data_ready/"])
-    point_calc_hist_1d_threads(args)
+    # args = []
+    # for gp in gps:
+    #     args.append([gp,"./data_server/","./data_ready/"])
+    # point_calc_hist_1d_threads(args)
 
 
