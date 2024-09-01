@@ -84,7 +84,7 @@ def point_calc_hist_1d(code,f_path="./data_server/",w_path="./data_ready/"):
         return ret
     csvs = sorted(os.listdir(f_path+code))
     csvs = [f_path+code+'/'+p for p in csvs]
-    for i in range(600,len(csvs)):
+    for i in range(len(csvs)):
         data_lst5d = merge_data(csvs[max(0,i-5):i+1])
         data_lst2d = merge_data(csvs[max(0, i - 1):i + 1])
         data_1d = merge_data([csvs[i]])
@@ -128,10 +128,10 @@ if __name__ == "__main__":
     # 多线程
     gps=['TSLA','PDD','NVDA','AAPL','AMD','BABA','GOOGL','MSFT','QQQ']
 
-    # args = []
-    # for gp in gps:
-    #     args.append(["./data_tdx_raw/74#" + gp + ".txt", gp, "./data_server/"])
-    # parse_tdx_rawdata_1d_threads(args=args)
+    args = []
+    for gp in gps:
+        args.append(["./data_tdx_raw/74#" + gp + ".txt", gp, "./data_server/"])
+    parse_tdx_rawdata_1d_threads(args=args)
 
     args = []
     for gp in gps:

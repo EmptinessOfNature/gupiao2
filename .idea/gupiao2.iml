@@ -3,6 +3,8 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/data_huice" />
+      <excludeFolder url="file://$MODULE_DIR$/data_ready" />
+      <excludeFolder url="file://$MODULE_DIR$/data_server" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.12 (envs)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
