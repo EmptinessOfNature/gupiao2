@@ -1,14 +1,31 @@
 from macd_utils import tdx_raw2_kline,double_macd,jw,duanxian
 
-def is_chuan_df(row,col,pre_len,post_len,thresh):
-    index = row.name
-    if index<pre_len+post_len-1:
-        return False
+def is_chuan(data,col,pre_len,post_len,thresh,direction):
+    def _is_chuan_up(row,col,pre_len,post_len,thresh):
+        index = row.name
+        if index<pre_len+post_len-1:
+            return False
+        else:
+            values_pre = data[col].iloc[index-pre_len-post_len+1:index-post_len+1]
+            values_post = data[col].iloc[index-post_len+1:index+1]
+            ret = bool(((values_pre<=thresh).all()) & ((values_post>thresh).all()))
+            return ret
+    def _is_chuan_down(row,col,pre_len,post_len,thresh):
+        index = row.name
+        if index<pre_len+post_len-1:
+            return False
+        else:
+            values_pre = data[col].iloc[index-pre_len-post_len+1:index-post_len+1]
+            values_post = data[col].iloc[index-post_len+1:index+1]
+            ret = bool(((values_pre>=thresh).all()) & ((values_post<thresh).all()))
+            return ret
+    if direction=='up':
+        ret = data.apply(_is_chuan_up, axis=1, col=col, pre_len=pre_len, post_len=post_len, thresh=thresh)
+    elif direction=='down':
+        ret = data.apply(_is_chuan_down, axis=1, col=col, pre_len=pre_len, post_len=post_len, thresh=thresh)
     else:
-        values_pre = data[col].iloc[index-pre_len-post_len+1:index-post_len+1]
-        values_post = data[col].iloc[index-post_len+1:index+1]
-        ret = bool(((values_pre<=thresh).all()) & ((values_post>thresh).all()))
-        return ret
+        raise ValueError("direction错误")
+    return ret
 
 def merge_signal(data):
     # long_rules.append(
@@ -24,7 +41,10 @@ def merge_signal(data):
     #     and is_v(data, i, "m2", 3, 3, "bottom")
     #     and abs(data.loc[i, "m1"]) >= 2 * abs(data.loc[i, "m2"])
     # )
-    data['debug_chuan'] = data.apply(is_chuan_df,axis=1,col='m1',pre_len=2,post_len=2,thresh=0)
+    data['is_chuan_up']  = is_chuan(data,col='m1',pre_len=2,post_len=2,thresh=0,direction='up')
+    data['is_chuan_down'] = is_chuan(data,col='m1',pre_len=2,post_len=2,thresh=0,direction='down')
+    # 规则1
+    (data['m1']>0) & (data['m1'].abs()>1)
     return data
 
 
