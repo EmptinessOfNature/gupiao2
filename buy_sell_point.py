@@ -280,6 +280,7 @@ class ZhiCheng:
             NOTEXTDX=SMA(K,M2A,1);
             baijiao=math.atan((SMA(K,M2A,1)/REF(SMA(K,M2A,1),1)-1)[-1]*100)*180/3.1416;
             ret.loc[j,'baijiao'] = baijiao
+            ret.loc[j,'manxian'] = NOTEXTDX[-1]
         return ret
 
 
@@ -290,6 +291,8 @@ if __name__ == "__main__":
     hist.columns = ["dt", "open", "close", "high", "low", "vol", "cje", "zxj"]
     zhicheng = ZhiCheng()
     ret = zhicheng.calc_point(hist, date_mode="ib")
+    ret3 = zhicheng.calc_baixian(ret)
     print(ret)
     ret2 = zhicheng.calc_point_2_jw_1(ret)
+    ret3 = zhicheng.calc_baixian(ret)
     print(ret2)

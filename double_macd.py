@@ -609,7 +609,7 @@ def draw_line(data, code="",comment=""):
     fig.update_layout(title_text=code+comment)
     print(len(long_in_signals), len(short_in_signals))
     fig.write_image("./data_huice_dm/" + code + "_fig.jpg",width=2000,height=1000)
-    # fig.show()
+    fig.show()
 
 
 def draw_line_jw_duanxian(data):

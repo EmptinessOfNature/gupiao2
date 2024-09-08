@@ -335,12 +335,12 @@ if __name__ == "__main__":
     # 多线程回测
     # gps = ["TSLA", "PDD", "NVDA", "AAPL", "AMD", "BABA", "GOOGL", "MSFT",'QQQ']
     gps = ['TSLA', 'PDD', 'NVDA', 'AAPL', 'AMD', 'BABA', 'GOOGL', 'MSFT', 'QQQ']
-    gps = [ 'AAPL', 'BABA', 'GOOGL']
+    # gps = [ 'AAPL', 'BABA', 'GOOGL']
 
     args = []
     stg_names = []
 
-    for x_atr in np.arange(0.4, 0.5, 0.1):
+    for x_atr in np.arange(1.3, 1.4, 0.1):
         stg_name = str(round(float(x_atr), 2)) + "x5min_atr_jw1_qingcang_jw1d80_onlyjw5"
         if stg_name not in stg_names:
             stg_names.append(stg_name)
