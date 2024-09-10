@@ -5,6 +5,7 @@ import numpy as np
 import warnings
 from buy_sell_point import ZhiCheng
 import multiprocessing
+from longport_utils import Longport_agent
 
 warnings.filterwarnings("ignore")
 
@@ -94,12 +95,15 @@ def point_calc_hist_1d(code,f_path="./data_server/",w_path="./data_ready/"):
         hist2 = zhicheng.calc_point_2_jw_1(data_lst5d)
         hist3 = hist2[-390:].reset_index(drop=True)
         hist4 = zhicheng.calc_baixian(data_lst2d)[-390:].reset_index(drop=True)
+        # 计算日jw
+        jw = zhicheng.agent.get_jw_longport(code=csvs[i].split('/')[-2], date=csvs[i].split('/')[-1].split('.')[0])[-1]
 
         if not os.path.exists(w_path + code):
             os.makedirs(w_path + code)
             print("新建文件夹", w_path + code)
         merged = pd.merge(hist, hist3, on='dt', how='left')
-        merged = pd.merge(merged, hist4[['dt','baijiao']], on='dt', how='left')
+        merged = pd.merge(merged, hist4[['dt','baijiao','manxian']], on='dt', how='left')
+        merged['jw1D'] = jw
         merged.to_csv(w_path+code+'/'+csvs[i].split('/')[-1])
         print(csvs[i],'计算完成')
 
@@ -116,14 +120,14 @@ def point_calc_hist_1d_threads(args):
 
 
 if __name__ == "__main__":
-    # 单线程
+    # 单线程debug
     # gp = 'TQQQ'
-    # gps = ['TQQQ']
-    # for gp in gps:
-    #     parse_tdx_rawdata_1d(
-    #         r_path="./data_tdx_raw/74#"+gp+".txt", code=gp, w_path="./data_server/"
-    #     )
-        # point_calc_hist_1d(code = gp)
+    gps = ['QQQ']
+    for gp in gps:
+        # parse_tdx_rawdata_1d(
+        #     r_path="./data_tdx_raw/74#"+gp+".txt", code=gp, w_path="./data_server/"
+        # )
+        point_calc_hist_1d(code = gp)
     # print(1)
     # 多线程
     gps=['TSLA','PDD','NVDA','AAPL','AMD','BABA','GOOGL','MSFT','QQQ']

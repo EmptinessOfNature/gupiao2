@@ -5,8 +5,11 @@ import glob, os
 import json
 import pandas as pd
 import math
+from longport_utils import Longport_agent
 
 class ZhiCheng:
+    def __init__(self):
+        self.agent = Longport_agent()
     def const_1(self, X_in, Y, Z):
         if X_in == 0:
             X = CONST(SUM(IF(Y, REF(Z, 1), 0), 0))
